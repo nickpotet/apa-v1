@@ -25,8 +25,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ env }) => {
     return json({ error: 'GEMINI_API_KEY not configured' }, { status: 503 });
   }
 
-  const model = env.GEMINI_MODEL ?? DEFAULT_MODEL;
   const expireTime = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  const newSessionExpireTime = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
   try {
     const client = new GoogleGenAI({
@@ -38,14 +38,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env }) => {
       config: {
         uses: 1,
         expireTime,
-        newSessionExpireTime: new Date(Date.now() + 60 * 1000),
-        liveConnectConstraints: {
-          model,
-          config: {
-            responseModalities: ['AUDIO'],
-            temperature: 0.7,
-          },
-        },
+        newSessionExpireTime,
         httpOptions: { apiVersion: 'v1alpha' },
       },
     });
