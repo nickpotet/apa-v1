@@ -1,6 +1,5 @@
 // Static venue config used by React components.
 // Source of truth lives in /config/gallery_faq.json — keep in sync.
-// Day 6: swap useVenueStatus to fetch /api/config instead of reading this module.
 
 import type { Language } from '../voice/providers/VoiceProvider';
 

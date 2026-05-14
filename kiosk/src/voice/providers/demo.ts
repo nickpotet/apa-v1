@@ -14,15 +14,10 @@ export class DemoVoiceProvider implements VoiceProvider {
     this.stopped = false;
     this.events = events;
     this.lang = config.initialLanguage;
-    if ((config.inputMode ?? 'audio') === 'audio') events.onListening();
+    events.onListening();
   }
 
   endTurn(): void {
-    this.respond();
-  }
-
-  sendText(text: string): void {
-    this.events?.onTranscript({ role: 'user', text });
     this.respond();
   }
 

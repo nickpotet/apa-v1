@@ -9,7 +9,6 @@ export type ScenarioId = (typeof SCENARIO_IDS)[number];
 interface Props {
   lang: Language;
   disabled?: boolean;
-  // Day 3 wires this to VoiceProvider to send a synthetic opening transcript.
   onChipTap: (id: ScenarioId) => void;
 }
 

@@ -6,8 +6,6 @@ export type Language = 'es' | 'en' | 'ru' | 'ca';
 export interface VoiceProviderConfig {
   /** Hard cap on a single conversation, in seconds. CLAUDE.md rule 4: 60–90 s. */
   maxConversationSeconds: number;
-  /** Audio for push-to-talk turns, text for scenario chips. Defaults to audio. */
-  inputMode?: 'audio' | 'text';
   /** Initial UI language; the engine may switch after detecting user speech. */
   initialLanguage: Language;
   /** Fully resolved system prompt assembled from /config/*. */
@@ -38,8 +36,6 @@ export interface VoiceProvider {
   start(config: VoiceProviderConfig, events: VoiceProviderEvents): Promise<void>;
   /** Signals end of user speech (button-up). Stops mic, model generates response. */
   endTurn(): void;
-  /** Sends a synthetic text turn — used by scenario chips to skip mic input. */
-  sendText(text: string): void;
   /** Fully closes the session. */
   stop(): Promise<void>;
 }

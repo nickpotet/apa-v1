@@ -13,8 +13,8 @@ interface Props {
   kioskState: KioskState;
   onTalkStart: () => void;
   onTalkEnd: () => void;
-  onChipTap: (id: ScenarioId) => void; // Day 3 wires to VoiceProvider
-  onLangChange: (l: Language) => void; // dev helper removed before deploy
+  onChipTap: (id: ScenarioId) => void;
+  onLangChange: (l: Language) => void;
 }
 
 const LANGS: Language[] = ['es', 'en', 'ru', 'ca'];
@@ -40,7 +40,7 @@ export function KioskScreen({
         <VenueStatusBadge lang={lang} />
       </header>
 
-      {/* ── Dev lang switcher — remove before deploy ── */}
+      {/* ── Language switcher ── */}
       <div className="flex shrink-0 justify-center gap-2 pb-2">
         {LANGS.map((l) => (
           <button

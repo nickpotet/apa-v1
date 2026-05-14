@@ -1,9 +1,10 @@
 // OpenAI Realtime adapter — implements VoiceProvider using the Realtime WebSocket API.
 // CLAUDE.md rule: this is the ONLY file allowed to import/use OpenAI's Realtime WS.
 // Swap in App.tsx through VOICE_PROVIDER=openai for the Day 7 field-test bake-off.
-import type { VoiceProvider, VoiceProviderConfig, VoiceProviderEvents, Language } from './VoiceProvider';
+import type { VoiceProvider, VoiceProviderConfig, VoiceProviderEvents } from './VoiceProvider';
 import { AudioCapture } from '../../audio/AudioCapture';
 import { AudioPlayback } from '../../audio/AudioPlayback';
+import { detectLanguage } from '../languageDetection';
 
 const MODEL = 'gpt-realtime';
 const VOICE = 'verse'; // warm, natural — closest to Apa's personality in OpenAI voices
@@ -36,18 +37,15 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
     await this.stopActiveSession();
     this.stopped = false;
     this.events  = events;
-    const inputMode = config.inputMode ?? 'audio';
 
     try {
-      if (inputMode === 'audio') {
-        await this.capture.start((pcm16) => {
-          if (this.stopped || this.ws?.readyState !== WebSocket.OPEN) return;
-          this.ws.send(JSON.stringify({
-            type: 'input_audio_buffer.append',
-            audio: toBase64(pcm16),
-          }));
-        });
-      }
+      await this.capture.start((pcm16) => {
+        if (this.stopped || this.ws?.readyState !== WebSocket.OPEN) return;
+        this.ws.send(JSON.stringify({
+          type: 'input_audio_buffer.append',
+          audio: toBase64(pcm16),
+        }));
+      });
 
       await new Promise<void>((resolve, reject) => {
         let settled = false;
@@ -87,7 +85,7 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
           this.nearTimeout = setTimeout(() => events.onTimeoutNearing(), (cap - 10) * 1000);
           this.capTimeout  = setTimeout(() => this.close('timeout'), cap * 1000);
 
-          if (inputMode === 'audio') events.onListening();
+          events.onListening();
           settled = true;
           resolve();
         };
@@ -114,17 +112,6 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
     this.events?.onThinking();
   }
 
-  sendText(text: string): void {
-    if (this.ws?.readyState !== WebSocket.OPEN) return;
-    this.ws.send(JSON.stringify({
-      type: 'conversation.item.create',
-      item: { type: 'message', role: 'user', content: [{ type: 'input_text', text }] },
-    }));
-    this.ws.send(JSON.stringify({ type: 'response.create' }));
-    this.startResponseWatchdog();
-    this.events?.onThinking();
-  }
-
   private handleMessage(msg: RtEvent): void {
     if (this.stopped) return;
     const ev = this.events;
@@ -143,7 +130,7 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
       case 'conversation.item.input_audio_transcription.completed': {
         const transcript = msg.transcript as string;
         ev.onTranscript({ role: 'user', text: transcript });
-        this.detectLanguage(transcript, ev);
+        ev.onLanguageDetected(detectLanguage(transcript));
         break;
       }
       case 'response.output_item.done': {
@@ -166,14 +153,6 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
         break;
       }
     }
-  }
-
-  private detectLanguage(text: string, ev: VoiceProviderEvents): void {
-    let lang: Language = 'es';
-    if (/[Ѐ-ӿ]/.test(text)) lang = 'ru';
-    else if (/\b(el|la|els|les|un|una|de|del|al|i|que|és|per|amb)\b/i.test(text)) lang = 'ca';
-    else if (!/\b(el|la|los|las|de|en|y|es|que|por|un|una)\b/i.test(text)) lang = 'en';
-    ev.onLanguageDetected(lang);
   }
 
   async stop(): Promise<void> {

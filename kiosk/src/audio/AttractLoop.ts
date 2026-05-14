@@ -57,14 +57,15 @@ export class AttractLoop {
   private playNext(): void {
     if (!this.running) return;
 
-    const clips = this.manifest[this.lang] ?? this.manifest['es'] ?? [];
+    const selectedLang = this.manifest[this.lang]?.length ? this.lang : 'es';
+    const clips = this.manifest[selectedLang] ?? [];
     if (clips.length === 0) {
       this.scheduleNext();
       return;
     }
 
     const clip = clips[Math.floor(Math.random() * clips.length)];
-    const url  = `/audio/attract/${this.lang}/${clip}`;
+    const url  = `/audio/attract/${selectedLang}/${clip}`;
 
     this.audio = new Audio(url);
     this.audio.onended = () => { if (this.running) this.scheduleNext(); };

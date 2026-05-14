@@ -4,9 +4,10 @@
 
 import { GoogleGenAI, Modality } from '@google/genai';
 import type { Session } from '@google/genai';
-import type { VoiceProvider, VoiceProviderConfig, VoiceProviderEvents, Language } from './VoiceProvider';
+import type { VoiceProvider, VoiceProviderConfig, VoiceProviderEvents } from './VoiceProvider';
 import { AudioCapture } from '../../audio/AudioCapture';
 import { AudioPlayback } from '../../audio/AudioPlayback';
+import { detectLanguage } from '../languageDetection';
 
 const MODEL = import.meta.env.VITE_GEMINI_MODEL ?? 'gemini-3.1-flash-live-preview';
 const VOICE = 'Puck'; // playful, warm — fits Apa's personality
@@ -46,19 +47,15 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.activityOpen = false;
     this.pendingAudioChunks = [];
 
-    const inputMode = config.inputMode ?? 'audio';
-
     try {
-      if (inputMode === 'audio') {
-        await this.capture.start((pcm16) => {
-          if (this.stopped || this.turnEnded) return;
-          if (!this.session || !this.activityOpen) {
-            this.queueAudioChunk(pcm16);
-            return;
-          }
-          this.sendAudioChunk(pcm16);
-        });
-      }
+      await this.capture.start((pcm16) => {
+        if (this.stopped || this.turnEnded) return;
+        if (!this.session || !this.activityOpen) {
+          this.queueAudioChunk(pcm16);
+          return;
+        }
+        this.sendAudioChunk(pcm16);
+      });
 
       const isEphemeralToken = config.ephemeralToken.startsWith('auth_tokens/');
       const ai = new GoogleGenAI({
@@ -76,13 +73,9 @@ export class GeminiVoiceProvider implements VoiceProvider {
           },
           inputAudioTranscription: {},
           outputAudioTranscription: {},
-          // PTT mode: disable auto-VAD, client sends activityStart/End explicitly.
-          // Note: explicitVadSignal is Enterprise-only; use realtimeInputConfig instead.
-          ...(inputMode === 'audio' ? {
-            realtimeInputConfig: {
-              automaticActivityDetection: { disabled: true },
-            },
-          } : {}),
+          realtimeInputConfig: {
+            automaticActivityDetection: { disabled: true },
+          },
         },
         callbacks: {
           onopen: () => {
@@ -100,14 +93,10 @@ export class GeminiVoiceProvider implements VoiceProvider {
         },
       });
 
-      this.turnEnded = inputMode === 'text';
-
-      if (inputMode === 'audio') {
-        this.session.sendRealtimeInput({ activityStart: {} });
-        this.activityOpen = true;
-        this.flushPendingAudioChunks();
-        events.onListening();
-      }
+      this.session.sendRealtimeInput({ activityStart: {} });
+      this.activityOpen = true;
+      this.flushPendingAudioChunks();
+      events.onListening();
     } catch (err) {
       await this.stopActiveSession();
       throw err;
@@ -124,19 +113,6 @@ export class GeminiVoiceProvider implements VoiceProvider {
       this.session.sendRealtimeInput({ activityEnd: {} });
       this.activityOpen = false;
     }
-    this.startResponseWatchdog();
-    this.events?.onThinking();
-  }
-
-  sendText(text: string): void {
-    if (!this.session) return;
-    this.capture.stop();
-    this.turnEnded = true;
-    if (this.activityOpen) {
-      this.session.sendRealtimeInput({ activityEnd: {} });
-      this.activityOpen = false;
-    }
-    this.session.sendRealtimeInput({ text });
     this.startResponseWatchdog();
     this.events?.onThinking();
   }
@@ -180,21 +156,13 @@ export class GeminiVoiceProvider implements VoiceProvider {
 
     if (sc.inputTranscription?.text) {
       ev.onTranscript({ role: 'user', text: sc.inputTranscription.text });
-      this.detectLanguage(sc.inputTranscription.text, ev);
+      ev.onLanguageDetected(detectLanguage(sc.inputTranscription.text));
     }
 
     if (sc.turnComplete) {
       this.clearResponseWatchdog();
       if (!this.playback.isPlaying) ev.onSpeakingEnd();
     }
-  }
-
-  private detectLanguage(text: string, ev: VoiceProviderEvents): void {
-    let lang: Language = 'es';
-    if (/[Ѐ-ӿ]/.test(text)) lang = 'ru';
-    else if (/\b(el|la|els|les|un|una|de|del|al|i|que|és|per|amb)\b/i.test(text)) lang = 'ca';
-    else if (!/\b(el|la|los|las|de|en|y|es|que|por|un|una)\b/i.test(text)) lang = 'en';
-    ev.onLanguageDetected(lang);
   }
 
   async stop(): Promise<void> {

@@ -2,11 +2,8 @@
 // Logs anonymized events (no raw audio, no PII) and enforces the daily $-cap.
 import Database from 'better-sqlite3';
 import { mkdirSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR   = resolve(__dirname, '../../data');
+import { resolve } from 'path';
+import { DATA_DIR } from './paths.js';
 mkdirSync(DATA_DIR, { recursive: true });
 
 const db = new Database(resolve(DATA_DIR, 'events.sqlite'));

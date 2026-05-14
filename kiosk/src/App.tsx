@@ -3,19 +3,14 @@ import type { Language, VoiceProvider } from './voice/providers/VoiceProvider';
 import type { KioskState } from './types';
 import { KioskScreen } from './ui/KioskScreen';
 import type { ScenarioId } from './ui/ScenarioChips';
-import { GeminiVoiceProvider } from './voice/providers/gemini';
-import { OpenAIRealtimeProvider } from './voice/providers/openai';
-import { DemoVoiceProvider } from './voice/providers/demo';
+import type { VoiceAccess } from './voice/providerFactory';
+import { createProvider } from './voice/providerFactory';
+import { fetchVoiceAccess, isVoiceAccessFresh } from './voice/voiceAccess';
+import { logConversation } from './voice/conversationLog';
 import { ArcadeButtonMic } from './audio/inputs/ArcadeButtonMic';
+import { requestMicrophonePermission } from './audio/microphonePermission';
 import { AttractLoop } from './audio/AttractLoop';
 import { ChipResponsePlayer } from './audio/ChipResponsePlayer';
-
-type ProviderKind = 'gemini' | 'openai' | 'demo';
-type VoiceAccess = {
-  token: string;
-  provider: ProviderKind;
-  expiresAt: number | null;
-};
 
 const IS_PAGES_DEMO = import.meta.env.VITE_PAGES_DEMO === '1';
 const DEMO_PROMPT = 'GitHub Pages demo mode. Static UI test only; realtime voice requires the local kiosk server.';
@@ -23,40 +18,6 @@ const DEMO_PROMPT = 'GitHub Pages demo mode. Static UI test only; realtime voice
 const input    = new ArcadeButtonMic();
 const attract  = new AttractLoop();
 const chipPlayer = new ChipResponsePlayer();
-
-async function requestMicrophonePermission(): Promise<boolean> {
-  if (!navigator.mediaDevices?.getUserMedia) return false;
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        channelCount: 1,
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      },
-    });
-    stream.getTracks().forEach((track) => track.stop());
-    return true;
-  } catch (err) {
-    console.warn('[mic permission]', err);
-    return false;
-  }
-}
-
-function createProvider(kind: ProviderKind): VoiceProvider {
-  if (kind === 'demo') return new DemoVoiceProvider();
-  return kind === 'openai' ? new OpenAIRealtimeProvider() : new GeminiVoiceProvider();
-}
-
-function logConversation(lang: string, trigger: string, startedAt: number, model: string) {
-  const duration_s = Math.round((Date.now() - startedAt) / 1000);
-  if (duration_s < 2) return; // ignore accidental taps
-  fetch('/api/log', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ lang, trigger, duration_s, model }),
-  }).catch(() => {/* log failures are non-fatal */});
-}
 
 export function App() {
   const [lang, setLang]           = useState<Language>('es');
@@ -68,6 +29,7 @@ export function App() {
   const convTrigger = useRef<string>('button');
   const startInProgress = useRef(false);
   const endRequested = useRef(false);
+  const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nextVoiceAccess = useRef<VoiceAccess | null>(null);
   const voiceAccessRequest = useRef<Promise<VoiceAccess | null> | null>(null);
   langRef.current = lang;
@@ -81,63 +43,25 @@ export function App() {
     endRequested.current = false;
   }, []);
 
-  const isVoiceAccessFresh = useCallback((access: VoiceAccess | null) => {
-    if (!access) return false;
-    return access.expiresAt === null || access.expiresAt > Date.now() + 30_000;
-  }, []);
-
-  const fetchVoiceAccess = useCallback(async (): Promise<VoiceAccess | null> => {
-    if (IS_PAGES_DEMO) {
-      return { token: 'demo-token', provider: 'demo', expiresAt: null };
-    }
-
+  const fetchVoiceAccessOnce = useCallback(async (): Promise<VoiceAccess | null> => {
     if (voiceAccessRequest.current) return voiceAccessRequest.current;
 
-    voiceAccessRequest.current = fetch('/api/token', { method: 'POST' })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(`token request failed: ${response.status}`);
-        }
-
-        const data = await response.json() as {
-          token?: string;
-          capped?: boolean;
-          provider?: ProviderKind;
-          expiresAt?: string;
-        };
-
-        if (data.capped) {
-          setKiosk('capped');
-          return null;
-        }
-
-        if (!data.token) {
-          throw new Error('token missing from /api/token response');
-        }
-
-        return {
-          token: data.token,
-          provider: data.provider ?? 'gemini',
-          expiresAt: data.expiresAt ? Date.parse(data.expiresAt) : null,
-        };
-      })
-      .finally(() => {
-        voiceAccessRequest.current = null;
-      });
+    voiceAccessRequest.current = fetchVoiceAccess(IS_PAGES_DEMO, () => setKiosk('capped'))
+      .finally(() => { voiceAccessRequest.current = null; });
 
     return voiceAccessRequest.current;
   }, []);
 
   const prefetchVoiceAccess = useCallback(() => {
     if (IS_PAGES_DEMO || isVoiceAccessFresh(nextVoiceAccess.current)) return;
-    fetchVoiceAccess()
+    fetchVoiceAccessOnce()
       .then((access) => {
         if (access && isVoiceAccessFresh(access)) nextVoiceAccess.current = access;
       })
       .catch((err) => {
         console.warn('[token prefetch]', err);
       });
-  }, [fetchVoiceAccess, isVoiceAccessFresh]);
+  }, [fetchVoiceAccessOnce]);
 
   // Fetch system prompt + token once on mount; load attract manifest
   useEffect(() => {
@@ -172,9 +96,21 @@ export function App() {
     attract.setLang(lang);
   }, [lang]);
 
-  const providerConfig = useCallback((sessionToken: string, inputMode: 'audio' | 'text' = 'audio') => ({
+  const showTransientError = useCallback(() => {
+    clearTimeout(errorTimer.current ?? undefined);
+    setKiosk('error');
+    errorTimer.current = setTimeout(() => {
+      errorTimer.current = null;
+      setKiosk('idle');
+    }, 3000);
+  }, []);
+
+  useEffect(() => {
+    return () => clearTimeout(errorTimer.current ?? undefined);
+  }, []);
+
+  const providerConfig = useCallback((sessionToken: string) => ({
     maxConversationSeconds: 75,
-    inputMode,
     initialLanguage: langRef.current,
     systemPrompt: systemPrompt ?? '',
     ephemeralToken: sessionToken,
@@ -183,7 +119,7 @@ export function App() {
   const requestVoiceAccess = useCallback(async (): Promise<string | null> => {
     const access = isVoiceAccessFresh(nextVoiceAccess.current)
       ? nextVoiceAccess.current
-      : await fetchVoiceAccess();
+      : await fetchVoiceAccessOnce();
 
     nextVoiceAccess.current = null;
     if (!access) return null;
@@ -191,7 +127,7 @@ export function App() {
     providerRef.current = createProvider(access.provider);
     prefetchVoiceAccess();
     return access.token;
-  }, [fetchVoiceAccess, isVoiceAccessFresh, prefetchVoiceAccess]);
+  }, [fetchVoiceAccessOnce, prefetchVoiceAccess]);
 
   const events = useCallback(() => ({
     onListening:        () => setKiosk('listening'),
@@ -208,14 +144,41 @@ export function App() {
     onError:            (e: Error) => {
       console.error('[voice]', e);
       resetConversation(false);
-      setKiosk('error');
-      setTimeout(() => setKiosk('idle'), 3000);
+      showTransientError();
     },
     onEnd:              (_r: string) => {
       resetConversation(true);
       setKiosk('idle');
     },
-  }), [resetConversation]);
+  }), [resetConversation, showTransientError]);
+
+  const startTalkTurn = useCallback(async () => {
+    if (!systemPrompt) return;
+    if (startInProgress.current || convStart.current !== null) return;
+
+    startInProgress.current = true;
+    endRequested.current = false;
+
+    try {
+      const sessionToken = await requestVoiceAccess();
+      if (!sessionToken) {
+        resetConversation(false);
+        return;
+      }
+
+      convStart.current = Date.now();
+      convTrigger.current = 'button';
+      setKiosk('listening');
+      await providerRef.current.start(providerConfig(sessionToken), events());
+      startInProgress.current = false;
+      if (endRequested.current) providerRef.current.endTurn();
+    } catch (e) {
+      console.error('[voice start]', e);
+      providerRef.current.stop().catch(() => {});
+      resetConversation(false);
+      showTransientError();
+    }
+  }, [events, providerConfig, requestVoiceAccess, resetConversation, showTransientError, systemPrompt]);
 
   const finishTalkTurn = useCallback(() => {
     if (startInProgress.current) {
@@ -228,66 +191,18 @@ export function App() {
   // Wire physical / keyboard input source
   useEffect(() => {
     input.attach({
-      onTalkStart: async () => {
-        if (!systemPrompt) return;
-        if (startInProgress.current || convStart.current !== null) return;
-        startInProgress.current = true;
-        endRequested.current = false;
-        try {
-          const sessionToken = await requestVoiceAccess();
-          if (!sessionToken) {
-            resetConversation(false);
-            return;
-          }
-          convStart.current  = Date.now();
-          convTrigger.current = 'button';
-          setKiosk('listening');
-          await providerRef.current.start(providerConfig(sessionToken, 'audio'), events());
-          startInProgress.current = false;
-          if (endRequested.current) providerRef.current.endTurn();
-        } catch (e) {
-          console.error('[voice start]', e);
-          providerRef.current.stop().catch(() => {});
-          resetConversation(false);
-          setKiosk('error');
-          setTimeout(() => setKiosk('idle'), 3000);
-        }
-      },
+      onTalkStart: startTalkTurn,
       onTalkEnd: finishTalkTurn,
-      onError:   (e) => { console.error('[input]', e); setKiosk('error'); setTimeout(() => setKiosk('idle'), 3000); },
+      onError:   (e) => { console.error('[input]', e); showTransientError(); },
     });
     return () => { input.detach(); };
-  }, [systemPrompt, providerConfig, events, requestVoiceAccess, resetConversation]);
+  }, [finishTalkTurn, showTransientError, startTalkTurn]);
 
-  const handleTalkStart = useCallback(async () => {
-    if (!systemPrompt) return;
-    if (startInProgress.current || convStart.current !== null) return;
-    startInProgress.current = true;
-    endRequested.current = false;
-    try {
-      const sessionToken = await requestVoiceAccess();
-      if (!sessionToken) {
-        resetConversation(false);
-        return;
-      }
-      convStart.current   = Date.now();
-      convTrigger.current = 'button';
-      setKiosk('listening');
-      await providerRef.current.start(providerConfig(sessionToken, 'audio'), events());
-      startInProgress.current = false;
-      if (endRequested.current) providerRef.current.endTurn();
-    } catch (e) {
-      console.error('[voice start]', e);
-      providerRef.current.stop().catch(() => {});
-      resetConversation(false);
-      setKiosk('error');
-      setTimeout(() => setKiosk('idle'), 3000);
-    }
-  }, [systemPrompt, providerConfig, events, requestVoiceAccess, resetConversation]);
+  const handleTalkStart = startTalkTurn;
 
   const handleTalkEnd = finishTalkTurn;
 
-  const handleChipTap = useCallback(async (id: ScenarioId) => {
+  const handleChipTap = useCallback((id: ScenarioId) => {
     if (startInProgress.current || convStart.current !== null) return;
     startInProgress.current = true;
     endRequested.current = false;

@@ -2,11 +2,8 @@
 // Frontend uses this to pick random clips without hardcoding filenames.
 import { Router } from 'express';
 import { readdirSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ATTRACT_DIR = resolve(__dirname, '../../../audio/attract');
+import { resolve } from 'path';
+import { ATTRACT_DIR } from '../paths.js';
 
 const LANGS = ['es', 'en', 'ru', 'ca'] as const;
 
