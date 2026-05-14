@@ -55,7 +55,11 @@ export class GeminiVoiceProvider implements VoiceProvider {
         });
       }
 
-      const ai = new GoogleGenAI({ apiKey: config.ephemeralToken });
+      const isEphemeralToken = config.ephemeralToken.startsWith('auth_tokens/');
+      const ai = new GoogleGenAI({
+        apiKey: config.ephemeralToken,
+        ...(isEphemeralToken ? { httpOptions: { apiVersion: 'v1alpha' } } : {}),
+      });
 
       this.session = await ai.live.connect({
         model: MODEL,

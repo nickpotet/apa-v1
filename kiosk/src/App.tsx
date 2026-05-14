@@ -46,7 +46,6 @@ export function App() {
   const [lang, setLang]           = useState<Language>('es');
   const [kioskState, setKiosk]    = useState<KioskState>('idle');
   const [systemPrompt, setPrompt] = useState<string | null>(null);
-  const [token, setToken]         = useState<string | null>(null);
   const providerRef = useRef<VoiceProvider>(createProvider(IS_PAGES_DEMO ? 'demo' : 'gemini'));
   const langRef    = useRef(lang);
   const convStart  = useRef<number | null>(null);
@@ -68,7 +67,6 @@ export function App() {
   useEffect(() => {
     if (IS_PAGES_DEMO) {
       setPrompt(DEMO_PROMPT);
-      setToken('demo-token');
       providerRef.current = createProvider('demo');
       attract.load();
       return;
@@ -77,18 +75,6 @@ export function App() {
     fetch('/api/config')
       .then((r) => r.json())
       .then((d: { systemPrompt: string }) => setPrompt(d.systemPrompt))
-      .catch(() => setKiosk('offline'));
-
-    fetch('/api/token', { method: 'POST' })
-      .then((r) => r.json())
-      .then((d: { token?: string; capped?: boolean; provider?: ProviderKind }) => {
-        if (d.capped) { setKiosk('capped'); return; }
-        if (d.provider) {
-          providerRef.current.stop().catch(() => {});
-          providerRef.current = createProvider(d.provider);
-        }
-        if (d.token) setToken(d.token);
-      })
       .catch(() => setKiosk('offline'));
 
     attract.load();
@@ -108,13 +94,43 @@ export function App() {
     attract.setLang(lang);
   }, [lang]);
 
-  const providerConfig = useCallback((inputMode: 'audio' | 'text' = 'audio') => ({
+  const providerConfig = useCallback((sessionToken: string, inputMode: 'audio' | 'text' = 'audio') => ({
     maxConversationSeconds: 75,
     inputMode,
     initialLanguage: langRef.current,
     systemPrompt: systemPrompt ?? '',
-    ephemeralToken: token ?? '',
-  }), [systemPrompt, token]);
+    ephemeralToken: sessionToken,
+  }), [systemPrompt]);
+
+  const requestVoiceAccess = useCallback(async (): Promise<string | null> => {
+    if (IS_PAGES_DEMO) return 'demo-token';
+
+    const response = await fetch('/api/token', { method: 'POST' });
+    if (!response.ok) {
+      throw new Error(`token request failed: ${response.status}`);
+    }
+
+    const data = await response.json() as {
+      token?: string;
+      capped?: boolean;
+      provider?: ProviderKind;
+    };
+
+    if (data.capped) {
+      setKiosk('capped');
+      return null;
+    }
+
+    if (data.provider) {
+      providerRef.current = createProvider(data.provider);
+    }
+
+    if (!data.token) {
+      throw new Error('token missing from /api/token response');
+    }
+
+    return data.token;
+  }, []);
 
   const events = useCallback(() => ({
     onListening:        () => setKiosk('listening'),
@@ -152,15 +168,20 @@ export function App() {
   useEffect(() => {
     input.attach({
       onTalkStart: async () => {
-        if (!systemPrompt || !token) return;
+        if (!systemPrompt) return;
         if (startInProgress.current || convStart.current !== null) return;
-        convStart.current  = Date.now();
-        convTrigger.current = 'button';
         startInProgress.current = true;
         endRequested.current = false;
-        setKiosk('listening');
         try {
-          await providerRef.current.start(providerConfig('audio'), events());
+          const sessionToken = await requestVoiceAccess();
+          if (!sessionToken) {
+            resetConversation(false);
+            return;
+          }
+          convStart.current  = Date.now();
+          convTrigger.current = 'button';
+          setKiosk('listening');
+          await providerRef.current.start(providerConfig(sessionToken, 'audio'), events());
           startInProgress.current = false;
           if (endRequested.current) providerRef.current.endTurn();
         } catch (e) {
@@ -175,18 +196,23 @@ export function App() {
       onError:   (e) => { console.error('[input]', e); setKiosk('error'); setTimeout(() => setKiosk('idle'), 3000); },
     });
     return () => { input.detach(); };
-  }, [systemPrompt, token, providerConfig, events]);
+  }, [systemPrompt, providerConfig, events, requestVoiceAccess, resetConversation]);
 
   const handleTalkStart = useCallback(async () => {
-    if (!systemPrompt || !token) return;
+    if (!systemPrompt) return;
     if (startInProgress.current || convStart.current !== null) return;
-    convStart.current   = Date.now();
-    convTrigger.current = 'button';
     startInProgress.current = true;
     endRequested.current = false;
-    setKiosk('listening');
     try {
-      await providerRef.current.start(providerConfig('audio'), events());
+      const sessionToken = await requestVoiceAccess();
+      if (!sessionToken) {
+        resetConversation(false);
+        return;
+      }
+      convStart.current   = Date.now();
+      convTrigger.current = 'button';
+      setKiosk('listening');
+      await providerRef.current.start(providerConfig(sessionToken, 'audio'), events());
       startInProgress.current = false;
       if (endRequested.current) providerRef.current.endTurn();
     } catch (e) {
@@ -196,20 +222,25 @@ export function App() {
       setKiosk('error');
       setTimeout(() => setKiosk('idle'), 3000);
     }
-  }, [systemPrompt, token, providerConfig, events]);
+  }, [systemPrompt, providerConfig, events, requestVoiceAccess, resetConversation]);
 
   const handleTalkEnd = finishTalkTurn;
 
   const handleChipTap = useCallback(async (id: ScenarioId) => {
-    if (!systemPrompt || !token) return;
+    if (!systemPrompt) return;
     if (startInProgress.current || convStart.current !== null) return;
-    convStart.current   = Date.now();
-    convTrigger.current = 'chip';
     startInProgress.current = true;
     endRequested.current = false;
     setKiosk('thinking');
     try {
-      await providerRef.current.start(providerConfig('text'), events());
+      const sessionToken = await requestVoiceAccess();
+      if (!sessionToken) {
+        resetConversation(false);
+        return;
+      }
+      convStart.current   = Date.now();
+      convTrigger.current = 'chip';
+      await providerRef.current.start(providerConfig(sessionToken, 'text'), events());
       startInProgress.current = false;
       providerRef.current.sendText(CHIP_TEXT[id][langRef.current]);
     } catch (e) {
@@ -219,7 +250,7 @@ export function App() {
       setKiosk('error');
       setTimeout(() => setKiosk('idle'), 3000);
     }
-  }, [systemPrompt, token, providerConfig, events]);
+  }, [systemPrompt, providerConfig, events, requestVoiceAccess, resetConversation]);
 
   return (
     <KioskScreen
