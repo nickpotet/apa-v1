@@ -8,16 +8,7 @@ import { OpenAIRealtimeProvider } from './voice/providers/openai';
 import { DemoVoiceProvider } from './voice/providers/demo';
 import { ArcadeButtonMic } from './audio/inputs/ArcadeButtonMic';
 import { AttractLoop } from './audio/AttractLoop';
-
-// Synthetic text opener sent to Apa when a scenario chip is tapped.
-const CHIP_TEXT: Record<ScenarioId, Record<Language, string>> = {
-  family:        { es: 'Hola, venimos en familia con niños',       en: "Hi, we're a family with kids",           ru: 'Привет, мы пришли семьёй с детьми',       ca: 'Hola, venim en família amb nens' },
-  couple:        { es: 'Somos pareja, buscamos algo que hacer',    en: "We're a couple looking for things to do", ru: 'Мы пара, ищем чем заняться',              ca: 'Som parella, busquem alguna cosa' },
-  photoHobbyist: { es: '¿Puedo hacer fotos aquí?',                 en: 'Can I take photos inside?',               ru: 'Можно внутри фотографировать?',            ca: 'Es poden fer fotos aquí dins?' },
-  gift:          { es: 'Busco un regalo para alguien especial',    en: "I'm looking for a gift",                  ru: 'Ищу подарок для кого-то особенного',       ca: 'Busco un regal per a algú especial' },
-  howMuch:       { es: '¿Cuánto cuesta la entrada?',               en: 'How much does it cost?',                  ru: 'Сколько стоит билет?',                     ca: "Quant costa l'entrada?" },
-  curiosity:     { es: '¿Qué es este lugar?',                      en: 'What is this place?',                     ru: 'Что это за место?',                        ca: 'Què és aquest lloc?' },
-};
+import { ChipResponsePlayer } from './audio/ChipResponsePlayer';
 
 type ProviderKind = 'gemini' | 'openai' | 'demo';
 type VoiceAccess = {
@@ -31,6 +22,7 @@ const DEMO_PROMPT = 'GitHub Pages demo mode. Static UI test only; realtime voice
 
 const input    = new ArcadeButtonMic();
 const attract  = new AttractLoop();
+const chipPlayer = new ChipResponsePlayer();
 
 async function requestMicrophonePermission(): Promise<boolean> {
   if (!navigator.mediaDevices?.getUserMedia) return false;
@@ -296,30 +288,19 @@ export function App() {
   const handleTalkEnd = finishTalkTurn;
 
   const handleChipTap = useCallback(async (id: ScenarioId) => {
-    if (!systemPrompt) return;
     if (startInProgress.current || convStart.current !== null) return;
     startInProgress.current = true;
     endRequested.current = false;
     setKiosk('thinking');
-    try {
-      const sessionToken = await requestVoiceAccess();
-      if (!sessionToken) {
-        resetConversation(false);
-        return;
-      }
-      convStart.current   = Date.now();
-      convTrigger.current = 'chip';
-      await providerRef.current.start(providerConfig(sessionToken, 'text'), events());
+    chipPlayer.play(id, langRef.current, () => {
       startInProgress.current = false;
-      providerRef.current.sendText(CHIP_TEXT[id][langRef.current]);
-    } catch (e) {
-      console.error('[chip]', e);
+      setKiosk('speaking');
+    }, () => {
       providerRef.current.stop().catch(() => {});
       resetConversation(false);
-      setKiosk('error');
-      setTimeout(() => setKiosk('idle'), 3000);
-    }
-  }, [systemPrompt, providerConfig, events, requestVoiceAccess, resetConversation]);
+      setKiosk('idle');
+    });
+  }, [resetConversation]);
 
   return (
     <KioskScreen
