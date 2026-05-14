@@ -42,8 +42,8 @@ export const UI_COPY: Record<Language, {
   chips: readonly [string, string, string, string, string, string];
 }> = {
   es: {
-    talkButton:     'Habla con Apa',
-    talkButtonHeld: 'Suéltalo para hablar',
+    talkButton:     'Mantén para hablar',
+    talkButtonHeld: 'Suelta al terminar',
     listening:      'Escuchando…',
     thinking:       'Pensando…',
     speaking:       'Apa habla…',
@@ -58,8 +58,8 @@ export const UI_COPY: Record<Language, {
     chips: ['👨‍👩‍👧 Somos familia', '❤️ En pareja', '📸 Quiero fotos', '🎁 Busco regalo', '💶 ¿Cuánto cuesta?', '🐧 ¿Qué es esto?'],
   },
   en: {
-    talkButton:     'Talk to Apa',
-    talkButtonHeld: 'Release to speak',
+    talkButton:     'Hold to talk',
+    talkButtonHeld: 'Release when done',
     listening:      'Listening…',
     thinking:       'Thinking…',
     speaking:       'Apa is speaking…',
@@ -74,8 +74,8 @@ export const UI_COPY: Record<Language, {
     chips: ['👨‍👩‍👧 Family visit', '❤️ For a couple', '📸 Photography', '🎁 Looking for gift', '💶 How much?', '🐧 What is this?'],
   },
   ru: {
-    talkButton:     'Поговори с Апой',
-    talkButtonHeld: 'Отпусти, чтобы говорить',
+    talkButton:     'Удерживай, чтобы говорить',
+    talkButtonHeld: 'Отпусти, когда закончишь',
     listening:      'Слушаю…',
     thinking:       'Думаю…',
     speaking:       'Апа говорит…',
@@ -90,8 +90,8 @@ export const UI_COPY: Record<Language, {
     chips: ['👨‍👩‍👧 Семья', '❤️ Пара', '📸 Хочу фото', '🎁 Ищу подарок', '💶 Сколько стоит?', '🐧 Что это?'],
   },
   ca: {
-    talkButton:     "Parla amb l'Apa",
-    talkButtonHeld: 'Deixa anar per parlar',
+    talkButton:     'Mantén per parlar',
+    talkButtonHeld: 'Deixa anar en acabar',
     listening:      'Escoltant…',
     thinking:       'Pensant…',
     speaking:       "L'Apa parla…",

@@ -32,6 +32,25 @@ const DEMO_PROMPT = 'GitHub Pages demo mode. Static UI test only; realtime voice
 const input    = new ArcadeButtonMic();
 const attract  = new AttractLoop();
 
+async function requestMicrophonePermission(): Promise<boolean> {
+  if (!navigator.mediaDevices?.getUserMedia) return false;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
+    stream.getTracks().forEach((track) => track.stop());
+    return true;
+  } catch (err) {
+    console.warn('[mic permission]', err);
+    return false;
+  }
+}
+
 function createProvider(kind: ProviderKind): VoiceProvider {
   if (kind === 'demo') return new DemoVoiceProvider();
   return kind === 'openai' ? new OpenAIRealtimeProvider() : new GeminiVoiceProvider();
@@ -142,6 +161,7 @@ export function App() {
       .then((d: { systemPrompt: string }) => setPrompt(d.systemPrompt))
       .catch(() => setKiosk('offline'));
 
+    requestMicrophonePermission();
     attract.load();
     prefetchVoiceAccess();
   }, [prefetchVoiceAccess]);
