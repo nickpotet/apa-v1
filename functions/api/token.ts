@@ -4,10 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 
 interface Env {
   GEMINI_API_KEY?: string;
-  GEMINI_MODEL?: string;
 }
-
-const DEFAULT_MODEL = 'gemini-3.1-flash-live-preview';
 
 function json(body: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(body), {

@@ -11,6 +11,7 @@ import { AudioPlayback } from '../../audio/AudioPlayback';
 const MODEL = import.meta.env.VITE_GEMINI_MODEL ?? 'gemini-3.1-flash-live-preview';
 const VOICE = 'Puck'; // playful, warm — fits Apa's personality
 const RESPONSE_TIMEOUT_MS = 15_000;
+const MAX_PENDING_AUDIO_CHUNKS = 1_000;
 
 function toBase64(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -34,24 +35,28 @@ export class GeminiVoiceProvider implements VoiceProvider {
   private chunksSent = 0;
   private turnEnded = false;
   private activityOpen = false;
+  private pendingAudioChunks: ArrayBuffer[] = [];
 
   async start(config: VoiceProviderConfig, events: VoiceProviderEvents): Promise<void> {
     await this.stopActiveSession();
     this.stopped = false;
     this.events = events;
     this.chunksSent = 0;
+    this.turnEnded = false;
     this.activityOpen = false;
+    this.pendingAudioChunks = [];
 
     const inputMode = config.inputMode ?? 'audio';
 
     try {
       if (inputMode === 'audio') {
         await this.capture.start((pcm16) => {
-          if (this.stopped || this.turnEnded || !this.session) return;
-          this.session.sendRealtimeInput({
-            audio: { data: toBase64(pcm16), mimeType: 'audio/pcm;rate=16000' },
-          });
-          this.chunksSent++;
+          if (this.stopped || this.turnEnded) return;
+          if (!this.session || !this.activityOpen) {
+            this.queueAudioChunk(pcm16);
+            return;
+          }
+          this.sendAudioChunk(pcm16);
         });
       }
 
@@ -100,6 +105,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
       if (inputMode === 'audio') {
         this.session.sendRealtimeInput({ activityStart: {} });
         this.activityOpen = true;
+        this.flushPendingAudioChunks();
         events.onListening();
       }
     } catch (err) {
@@ -113,6 +119,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.turnEnded = true;
     console.log(`[gemini] endTurn → activityEnd (sent ${this.chunksSent} audio chunks)`);
     this.capture.stop();
+    this.flushPendingAudioChunks();
     if (this.activityOpen) {
       this.session.sendRealtimeInput({ activityEnd: {} });
       this.activityOpen = false;
@@ -204,6 +211,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.session = null;
     this.events = null;
     this.activityOpen = false;
+    this.pendingAudioChunks = [];
   }
 
   private close(reason: 'user' | 'timeout' | 'error' | 'network', closeSocket = true): void {
@@ -216,6 +224,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
     }
     this.session = null;
     this.activityOpen = false;
+    this.pendingAudioChunks = [];
     this.events?.onEnd(reason);
     this.events = null;
   }
@@ -229,8 +238,32 @@ export class GeminiVoiceProvider implements VoiceProvider {
     try { this.session?.close(); } catch {}
     this.session = null;
     this.activityOpen = false;
+    this.pendingAudioChunks = [];
     this.events?.onError(err);
     this.events = null;
+  }
+
+  private queueAudioChunk(pcm16: ArrayBuffer): void {
+    this.pendingAudioChunks.push(pcm16);
+    if (this.pendingAudioChunks.length > MAX_PENDING_AUDIO_CHUNKS) {
+      this.pendingAudioChunks.shift();
+    }
+  }
+
+  private flushPendingAudioChunks(): void {
+    if (!this.session || !this.activityOpen) return;
+    for (const chunk of this.pendingAudioChunks) {
+      this.sendAudioChunk(chunk);
+    }
+    this.pendingAudioChunks = [];
+  }
+
+  private sendAudioChunk(pcm16: ArrayBuffer): void {
+    if (!this.session) return;
+    this.session.sendRealtimeInput({
+      audio: { data: toBase64(pcm16), mimeType: 'audio/pcm;rate=16000' },
+    });
+    this.chunksSent++;
   }
 
   private startResponseWatchdog(): void {

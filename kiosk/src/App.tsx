@@ -20,6 +20,11 @@ const CHIP_TEXT: Record<ScenarioId, Record<Language, string>> = {
 };
 
 type ProviderKind = 'gemini' | 'openai' | 'demo';
+type VoiceAccess = {
+  token: string;
+  provider: ProviderKind;
+  expiresAt: number | null;
+};
 
 const IS_PAGES_DEMO = import.meta.env.VITE_PAGES_DEMO === '1';
 const DEMO_PROMPT = 'GitHub Pages demo mode. Static UI test only; realtime voice requires the local kiosk server.';
@@ -52,6 +57,8 @@ export function App() {
   const convTrigger = useRef<string>('button');
   const startInProgress = useRef(false);
   const endRequested = useRef(false);
+  const nextVoiceAccess = useRef<VoiceAccess | null>(null);
+  const voiceAccessRequest = useRef<Promise<VoiceAccess | null> | null>(null);
   langRef.current = lang;
 
   const resetConversation = useCallback((shouldLog: boolean) => {
@@ -62,6 +69,64 @@ export function App() {
     startInProgress.current = false;
     endRequested.current = false;
   }, []);
+
+  const isVoiceAccessFresh = useCallback((access: VoiceAccess | null) => {
+    if (!access) return false;
+    return access.expiresAt === null || access.expiresAt > Date.now() + 30_000;
+  }, []);
+
+  const fetchVoiceAccess = useCallback(async (): Promise<VoiceAccess | null> => {
+    if (IS_PAGES_DEMO) {
+      return { token: 'demo-token', provider: 'demo', expiresAt: null };
+    }
+
+    if (voiceAccessRequest.current) return voiceAccessRequest.current;
+
+    voiceAccessRequest.current = fetch('/api/token', { method: 'POST' })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`token request failed: ${response.status}`);
+        }
+
+        const data = await response.json() as {
+          token?: string;
+          capped?: boolean;
+          provider?: ProviderKind;
+          expiresAt?: string;
+        };
+
+        if (data.capped) {
+          setKiosk('capped');
+          return null;
+        }
+
+        if (!data.token) {
+          throw new Error('token missing from /api/token response');
+        }
+
+        return {
+          token: data.token,
+          provider: data.provider ?? 'gemini',
+          expiresAt: data.expiresAt ? Date.parse(data.expiresAt) : null,
+        };
+      })
+      .finally(() => {
+        voiceAccessRequest.current = null;
+      });
+
+    return voiceAccessRequest.current;
+  }, []);
+
+  const prefetchVoiceAccess = useCallback(() => {
+    if (IS_PAGES_DEMO || isVoiceAccessFresh(nextVoiceAccess.current)) return;
+    fetchVoiceAccess()
+      .then((access) => {
+        if (access && isVoiceAccessFresh(access)) nextVoiceAccess.current = access;
+      })
+      .catch((err) => {
+        console.warn('[token prefetch]', err);
+      });
+  }, [fetchVoiceAccess, isVoiceAccessFresh]);
 
   // Fetch system prompt + token once on mount; load attract manifest
   useEffect(() => {
@@ -78,7 +143,8 @@ export function App() {
       .catch(() => setKiosk('offline'));
 
     attract.load();
-  }, []);
+    prefetchVoiceAccess();
+  }, [prefetchVoiceAccess]);
 
   // Attract loop: play idle clips when kiosk is idle, stop during conversation
   useEffect(() => {
@@ -103,34 +169,17 @@ export function App() {
   }), [systemPrompt]);
 
   const requestVoiceAccess = useCallback(async (): Promise<string | null> => {
-    if (IS_PAGES_DEMO) return 'demo-token';
+    const access = isVoiceAccessFresh(nextVoiceAccess.current)
+      ? nextVoiceAccess.current
+      : await fetchVoiceAccess();
 
-    const response = await fetch('/api/token', { method: 'POST' });
-    if (!response.ok) {
-      throw new Error(`token request failed: ${response.status}`);
-    }
+    nextVoiceAccess.current = null;
+    if (!access) return null;
 
-    const data = await response.json() as {
-      token?: string;
-      capped?: boolean;
-      provider?: ProviderKind;
-    };
-
-    if (data.capped) {
-      setKiosk('capped');
-      return null;
-    }
-
-    if (data.provider) {
-      providerRef.current = createProvider(data.provider);
-    }
-
-    if (!data.token) {
-      throw new Error('token missing from /api/token response');
-    }
-
-    return data.token;
-  }, []);
+    providerRef.current = createProvider(access.provider);
+    prefetchVoiceAccess();
+    return access.token;
+  }, [fetchVoiceAccess, isVoiceAccessFresh, prefetchVoiceAccess]);
 
   const events = useCallback(() => ({
     onListening:        () => setKiosk('listening'),
