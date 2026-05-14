@@ -82,9 +82,9 @@ export function ApaDriver({ kioskState, lang }: Props) {
             <ellipse className="apa-shadow" cx="120" cy="251" rx="62" ry="13" fill="#020617" opacity="0.42" />
 
             <g className="apa-body" filter="url(#apaSoftShadow)">
-              <path d="M53 146c0-68 29-115 67-115s67 47 67 115c0 70-28 112-67 112s-67-42-67-112Z" fill="url(#apaBody)" />
+              <path d="M53 147c0-70 29-116 67-116s67 46 67 116c0 69-28 111-67 111s-67-42-67-111Z" fill="url(#apaBody)" />
               <path d="M73 157c0-48 20-82 47-82s47 34 47 82c0 50-20 83-47 83s-47-33-47-83Z" fill="url(#apaBelly)" />
-              <path d="M73 75c11-29 27-44 47-44s36 15 47 44c-13-10-29-15-47-15S86 65 73 75Z" fill="#334155" opacity="0.82" />
+              <path d="M72 86c8-34 26-55 48-55s40 21 48 55c-12-13-29-21-48-21s-36 8-48 21Z" fill="#334155" opacity="0.78" />
 
               <g className="apa-flipper apa-flipper-left">
                 <path d="M58 139c-28 15-43 41-39 69 26-5 46-25 58-61Z" fill="#111827" />
@@ -95,7 +95,7 @@ export function ApaDriver({ kioskState, lang }: Props) {
                 <path d="M205 193c-15-8-26-21-34-38" fill="none" stroke="#334155" strokeWidth="4" strokeLinecap="round" opacity="0.55" />
               </g>
 
-              <path d="M86 82c9-9 21-14 34-14s25 5 34 14c-8 10-20 16-34 16s-26-6-34-16Z" fill="#f8fafc" opacity="0.93" />
+              <path d="M82 90c7-17 22-27 38-27s31 10 38 27c-8 13-22 21-38 21s-30-8-38-21Z" fill="#f8fafc" opacity="0.94" />
 
               <g className="apa-eyes">
                 {kioskState === 'sleeping' || kioskState === 'capped' ? (
