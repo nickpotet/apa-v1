@@ -1,0 +1,6 @@
+name = "apa-v1"
+compatibility_date = "2026-05-14"
+pages_build_output_dir = "kiosk/dist"
+
+[vars]
+GEMINI_MODEL = "gemini-3.1-flash-live-preview"

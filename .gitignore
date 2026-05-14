@@ -13,6 +13,7 @@ kiosk/dist/
 .env
 .env.local
 .env.*.local
+.dev.vars*
 *.pem
 
 # Logs
@@ -25,6 +26,8 @@ data/
 server/data/*.sqlite
 server/data/*.sqlite-journal
 .playwright-cli/
+.wrangler/
+.wrangler-pages-build/
 output/
 .claude/
 

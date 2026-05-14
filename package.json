@@ -6,10 +6,16 @@
   "scripts": {
     "dev": "concurrently -n server,kiosk -c blue,magenta \"npm:dev --prefix server\" \"npm:dev --prefix kiosk\"",
     "build": "npm run build --prefix server && npm run build --prefix kiosk",
+    "build:pages": "npm run build --prefix kiosk && node scripts/build-pages-config.mjs",
+    "deploy:pages": "npm run build:pages && npx wrangler pages deploy kiosk/dist --project-name apa-v1",
     "typecheck": "npm run typecheck --prefix server && npm run typecheck --prefix kiosk",
     "install:all": "npm install && npm install --prefix server && npm install --prefix kiosk"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260511.1",
     "concurrently": "^9.1.0"
+  },
+  "dependencies": {
+    "@google/genai": "^2.2.0"
   }
 }
