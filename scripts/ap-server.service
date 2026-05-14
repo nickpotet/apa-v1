@@ -1,0 +1,26 @@
+# systemd unit for the Ap Express server.
+# Install: sudo cp scripts/ap-server.service /etc/systemd/system/
+#          sudo systemctl enable ap-server && sudo systemctl start ap-server
+#
+# Assumes the repo is cloned to /opt/ap and npm run build has been run in server/.
+
+[Unit]
+Description=Ap Server (local kiosk backend)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=kiosk
+WorkingDirectory=/opt/ap/server
+ExecStartPre=/usr/bin/npm run build
+ExecStart=/usr/bin/node /opt/ap/server/dist/index.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=NODE_ENV=production
+EnvironmentFile=/opt/ap/.env
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,22 @@
+# systemd unit for the Ap kiosk Chrome window.
+# Install: sudo cp scripts/ap-kiosk.service /etc/systemd/system/
+#          sudo systemctl enable ap-kiosk && sudo systemctl start ap-kiosk
+#
+# Requires ap-server.service to be running and X / Wayland display available.
+
+[Unit]
+Description=Ap Kiosk (Chrome fullscreen)
+After=ap-server.service graphical.target
+Requires=ap-server.service
+
+[Service]
+Type=simple
+User=kiosk
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/kiosk/.Xauthority
+ExecStart=/opt/ap/scripts/ap-kiosk.sh
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=graphical.target

@@ -1,0 +1,4 @@
+# Nightly reboot at 03:00 local time to clear memory leaks and reload config.
+# Install: sudo crontab -e  (paste the line below)
+#
+# 0 3 * * * /sbin/shutdown -r now

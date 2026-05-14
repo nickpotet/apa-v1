@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+kiosk/dist/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Local DB / state
+data/
+server/data/*.sqlite
+server/data/*.sqlite-journal
+.playwright-cli/
+output/
+.claude/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+
+# Audio source masters (we commit the rendered .mp3/.ogg attract clips, not the masters)
+audio/_masters/
+
+# Rive editor autosaves
+rive/*.bak

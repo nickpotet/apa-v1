@@ -1,0 +1,35 @@
+{
+  "_comment": "Source of truth for attract-mode TTS clips. Run scripts/regen-attract-tts.sh to regenerate audio files.",
+  "es": [
+    { "id": "01_psst",      "text": "¡Psst! Por aquí… ¿me ves?" },
+    { "id": "02_hola",      "text": "Hola, soy Apa. ¿Quieres conocer mi mundo?" },
+    { "id": "03_pingus",    "text": "¿Sabías que aquí dentro puedes ver pingüinos?" },
+    { "id": "04_aventura",  "text": "La aventura empieza aquí mismo." },
+    { "id": "05_cuento",    "text": "Ven, te cuento algo chulo." },
+    { "id": "06_casco",     "text": "¡Entra y pondrás un casco de realidad virtual!" }
+  ],
+  "en": [
+    { "id": "01_psst",      "text": "Psst! Hey, over here!" },
+    { "id": "02_hello",     "text": "Hi, I'm Apa. Want to see my world?" },
+    { "id": "03_penguins",  "text": "Did you know you can see penguins inside?" },
+    { "id": "04_adventure", "text": "The adventure starts right here." },
+    { "id": "05_cool",      "text": "Come on, I'll show you something cool." },
+    { "id": "06_headset",   "text": "Step inside and try a VR headset!" }
+  ],
+  "ru": [
+    { "id": "01_psst",      "text": "Эй! Привет, я здесь!" },
+    { "id": "02_hello",     "text": "Привет, я Апа. Хочешь увидеть мой мир?" },
+    { "id": "03_penguins",  "text": "Знаешь, что здесь внутри можно увидеть пингвинов?" },
+    { "id": "04_adventure", "text": "Приключение начинается прямо здесь." },
+    { "id": "05_cool",      "text": "Заходи, покажу кое-что классное." },
+    { "id": "06_headset",   "text": "Зайди и надень шлем виртуальной реальности!" }
+  ],
+  "ca": [
+    { "id": "01_psst",      "text": "Psst! Ei, per aquí!" },
+    { "id": "02_hello",     "text": "Hola, soc l'Apa. Vols veure el meu món?" },
+    { "id": "03_penguins",  "text": "Saps que aquí dins pots veure pingüins?" },
+    { "id": "04_adventure", "text": "L'aventura comença aquí mateix." },
+    { "id": "05_cool",      "text": "Vine, et mostraré alguna cosa guai." },
+    { "id": "06_headset",   "text": "Entra i posa't unes ulleres de realitat virtual!" }
+  ]
+}

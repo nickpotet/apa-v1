@@ -1,0 +1,59 @@
+{
+  "$comment": "Enabled languages and per-language strings used outside of the LLM (UI labels, attract-clip manifests, error fallbacks). LLM-generated copy follows ap_persona.md, not this file.",
+  "enabled": ["es", "en", "ru", "ca"],
+  "default": "es",
+  "detection": {
+    "strategy": "model",
+    "$comment": "VoiceProvider does language detection on first user utterance. UI starts in 'default' until detected."
+  },
+  "ui": {
+    "es": {
+      "talkButton": "Habla con Apa",
+      "talkButtonHeld": "Suéltalo para hablar",
+      "listening": "Escuchando…",
+      "thinking": "Pensando…",
+      "speaking": "Apa habla…",
+      "offlineFallback": "Estoy sin voz un momento — entra a verme dentro.",
+      "scanQr": "Escanea para más",
+      "statusOpen": "Abierto ahora",
+      "statusLastCall": "Última entrada — 15 min",
+      "chips": ["👨‍👩‍👧 Somos familia", "❤️ En pareja", "📸 Quiero fotos", "🎁 Busco regalo", "💶 ¿Cuánto cuesta?", "🐧 ¿Qué es esto?"]
+    },
+    "en": {
+      "talkButton": "Talk to Apa",
+      "talkButtonHeld": "Release to speak",
+      "listening": "Listening…",
+      "thinking": "Thinking…",
+      "speaking": "Apa is speaking…",
+      "offlineFallback": "Lost my voice for a sec — come find me inside.",
+      "scanQr": "Scan for more",
+      "statusOpen": "Open now",
+      "statusLastCall": "Last entry — 15 min",
+      "chips": ["👨‍👩‍👧 Family visit", "❤️ For a couple", "📸 Photography", "🎁 Looking for gift", "💶 How much?", "🐧 What is this?"]
+    },
+    "ru": {
+      "talkButton": "Поговори с Апой",
+      "talkButtonHeld": "Отпусти, чтобы говорить",
+      "listening": "Слушаю…",
+      "thinking": "Думаю…",
+      "speaking": "Апа говорит…",
+      "offlineFallback": "Я ненадолго без голоса — заходи внутрь.",
+      "scanQr": "Сканируй для информации",
+      "statusOpen": "Открыто",
+      "statusLastCall": "Последний вход — 15 мин",
+      "chips": ["👨‍👩‍👧 Семья", "❤️ Пара", "📸 Хочу фото", "🎁 Ищу подарок", "💶 Сколько стоит?", "🐧 Что это?"]
+    },
+    "ca": {
+      "talkButton": "Parla amb l'Apa",
+      "talkButtonHeld": "Deixa anar per parlar",
+      "listening": "Escoltant…",
+      "thinking": "Pensant…",
+      "speaking": "L'Apa parla…",
+      "offlineFallback": "Sense veu un moment — entra a veure'm.",
+      "scanQr": "Escaneja per saber-ne més",
+      "statusOpen": "Obert ara",
+      "statusLastCall": "Última entrada — 15 min",
+      "chips": ["👨‍👩‍👧 Som família", "❤️ En parella", "📸 Vull fotos", "🎁 Busco regal", "💶 Quant costa?", "🐧 Què és això?"]
+    }
+  }
+}

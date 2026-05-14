@@ -1,0 +1,15 @@
+{
+  "name": "ap-monorepo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Ap penguin kiosk for cggalleries.com — root scripts that orchestrate /kiosk and /server",
+  "scripts": {
+    "dev": "concurrently -n server,kiosk -c blue,magenta \"npm:dev --prefix server\" \"npm:dev --prefix kiosk\"",
+    "build": "npm run build --prefix server && npm run build --prefix kiosk",
+    "typecheck": "npm run typecheck --prefix server && npm run typecheck --prefix kiosk",
+    "install:all": "npm install && npm install --prefix server && npm install --prefix kiosk"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

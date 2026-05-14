@@ -1,0 +1,216 @@
+{
+  "$comment": "Quick-lookup answers Ap can speak verbatim. Each entry is short (≤25s aloud). If an answer is missing, Ap redirects to Natalia at the front desk.",
+  "venueType": {
+    "$comment": "cggalleries.com is a penguin-themed VR exhibition in Lloret de Mar — NOT an art gallery. Ap is genuinely at home here.",
+    "es": "Una exposición sobre pingüinos con experiencias de Realidad Virtual.",
+    "en": "A penguin exhibition with Virtual Reality experiences.",
+    "ru": "Выставка про пингвинов с VR-эпизодами.",
+    "ca": "Una exposició sobre pingüins amb experiències de Realitat Virtual."
+  },
+  "hours": {
+    "$comment": "Two schedules: 'long' Thu–Mon (tourist days), 'short' Tue–Wed. Lunch break 14:00 → afternoon reopening. Open 7 days.",
+    "schedules": {
+      "long": {
+        "days": ["thu", "fri", "sat", "sun", "mon"],
+        "morning": { "open": "10:30", "close": "14:00" },
+        "afternoon": { "open": "16:00", "close": "20:30" }
+      },
+      "short": {
+        "days": ["tue", "wed"],
+        "morning": { "open": "10:00", "close": "14:00" },
+        "afternoon": { "open": "15:00", "close": "19:00" }
+      }
+    },
+    "lastEntryBeforeCloseMinutes": 15
+  },
+  "address": {
+    "street": "Carrer Sant Romà, 12",
+    "postal": "17310",
+    "city": "Lloret de Mar",
+    "province": "Girona",
+    "country": "ES",
+    "directionsLandmark": {
+      "$comment": "The main town church is Església de Sant Romà — same name as the street we're on. Ap leans on that coincidence.",
+      "anchor": "Església de Sant Romà",
+      "distanceMeters": 50,
+      "say": {
+        "es": "Estamos en la calle de la iglesia de Sant Romà, a 50 metros bajando.",
+        "en": "We're on the Sant Romà church's street, 50 meters down.",
+        "ru": "Мы на той же улице, что и церковь Сант-Рома — 50 метров вниз.",
+        "ca": "Som al carrer de l'església de Sant Romà, a 50 metres."
+      }
+    }
+  },
+  "accessibility": {
+    "wheelchair": {
+      "entry": true,
+      "restroom": false,
+      "$comment": "Honest nuance: entry is accessible, restroom is not. Ap must NOT say 'fully accessible' — say what's true.",
+      "say": {
+        "es": "La entrada es accesible para sillas y cochecitos. El baño existe pero no es accesible para sillas, te aviso.",
+        "en": "Entry is wheelchair- and stroller-accessible. There's a restroom but it's not wheelchair-accessible, heads up.",
+        "ru": "Вход доступен для колясок — и инвалидных, и детских. Туалет есть, но не для инвалидных колясок, предупреждаю.",
+        "ca": "L'entrada és accessible per a cadires i cotxets. Hi ha lavabo, però no és accessible per a cadires, t'aviso."
+      }
+    },
+    "strollers": true,
+    "restrooms": { "exists": true, "wheelchairAccessible": false }
+  },
+  "amenities": {
+    "cafe": { "exists": false },
+    "shop": {
+      "exists": true,
+      "type": "toys",
+      "note": {
+        "es": "Tienda de juguetes (pingüinos, claro).",
+        "en": "Toy shop — penguins, obviously.",
+        "ru": "Магазин игрушек — пингвины, конечно.",
+        "ca": "Botiga de joguines — pingüins, és clar."
+      }
+    },
+    "wifi": {
+      "exists": true,
+      "access": "QR code at the entrance",
+      "note": {
+        "es": "Hay Wi-Fi — escaneas un QR a la entrada.",
+        "en": "Wi-Fi available — scan the QR at the entrance.",
+        "ru": "Есть Wi-Fi — QR-код на входе.",
+        "ca": "Hi ha Wi-Fi — escaneja el QR a l'entrada."
+      }
+    }
+  },
+  "experiences": {
+    "vr": {
+      "name": "Realidad Virtual",
+      "includedWithStandardTicket": 2,
+      "extraEpisodesPaidSeparately": true,
+      "extraEpisodePrice": "Ask Natalia at the front desk.",
+      "episodes": {
+        "antarctica": [
+          {
+            "id": "antarctica-kayak",
+            "title": {
+              "es": "Kayak antártico",
+              "en": "Antarctic kayak",
+              "ru": "Антарктический каяк",
+              "ca": "Caiac antàrtic"
+            },
+            "summary": {
+              "es": "Vas en kayak entre pingüinos y orcas.",
+              "en": "You kayak among penguins and orcas.",
+              "ru": "Плывёшь на каяке среди пингвинов и косаток.",
+              "ca": "Vas en caiac entre pingüins i orques."
+            }
+          },
+          {
+            "id": "antarctica-climbing",
+            "title": {
+              "es": "Escalada antártica",
+              "en": "Antarctic climbing",
+              "ru": "Антарктическое скалолазание",
+              "ca": "Escalada antàrtica"
+            },
+            "summary": {
+              "es": "Un episodio de escalada en hielo y roca.",
+              "en": "A climbing episode on ice and rock.",
+              "ru": "Эпизод со скалолазанием по льду и скалам.",
+              "ca": "Un episodi d'escalada sobre gel i roca."
+            }
+          },
+          {
+            "id": "antarctica-camp-quest",
+            "title": {
+              "es": "Búsqueda en el campamento",
+              "en": "Camp search quest",
+              "ru": "Поисковый квест в лагере",
+              "ca": "Cerca al campament"
+            },
+            "summary": {
+              "es": "Un quest de búsqueda dentro de un campamento antártico.",
+              "en": "A search quest inside an Antarctic camp.",
+              "ru": "Поисковый квест внутри антарктического лагеря.",
+              "ca": "Un quest de cerca dins d'un campament antàrtic."
+            }
+          }
+        ],
+        "machuPicchu": [
+          {
+            "id": "machu-picchu-1",
+            "title": {
+              "es": "Machu Picchu 1",
+              "en": "Machu Picchu 1",
+              "ru": "Мачу-Пикчу 1",
+              "ca": "Machu Picchu 1"
+            },
+            "summary": {
+              "es": "TODO: confirm with Nick",
+              "en": "TODO: confirm with Nick",
+              "ru": "TODO: confirm with Nick",
+              "ca": "TODO: confirm with Nick"
+            }
+          },
+          {
+            "id": "machu-picchu-2",
+            "title": {
+              "es": "Machu Picchu 2",
+              "en": "Machu Picchu 2",
+              "ru": "Мачу-Пикчу 2",
+              "ca": "Machu Picchu 2"
+            },
+            "summary": {
+              "es": "TODO: confirm with Nick",
+              "en": "TODO: confirm with Nick",
+              "ru": "TODO: confirm with Nick",
+              "ca": "TODO: confirm with Nick"
+            }
+          }
+        ]
+      }
+    },
+    "iceCubeChallenge": {
+      "$comment": "Included as a gift with the MAXI ticket. The visitor gets an actual ice cube with a random souvenir (a small trinket or piece of jewelry) frozen inside; they melt or crack it open to feel the cold and the ice — sensory, not just visual.",
+      "say": {
+        "es": "Te dan un cubito de hielo de verdad con un regalito dentro — algo pequeño, sorpresa. Lo derrites o lo rompes, sientes el frío. Muy nuestro.",
+        "en": "They give you a real ice cube with a tiny surprise gift frozen inside. You melt it or crack it open — actual cold, actual ice. Very on-brand.",
+        "ru": "Тебе дают настоящий кубик льда с маленьким сувениром внутри. Растапливаешь или разбиваешь — реальный холод, реальный лёд. Очень в нашем духе.",
+        "ca": "Et donen un cubet de gel de veritat amb una sorpresa a dins. El desfàs o el trenques — fred real, gel real. Molt nostre."
+      }
+    },
+    "audioTale": {
+      "title": "Cuando los pingüinos miran al cielo",
+      "$comment": "Included with the MAXI ticket. Duration not yet specified — Ap should not invent it; if asked, redirect to Natalia."
+    }
+  },
+  "policies": {
+    "photography": {
+      "allowed": true,
+      "photoZone": true,
+      "storiesWithTagWelcomed": true,
+      "note": {
+        "es": "Foto allowed, hay zona de fotos, y si subes una story con la etiqueta te regalan un imán.",
+        "en": "Photos allowed, there's a photo spot, and if you post a story tagging us they give you a magnet.",
+        "ru": "Фото можно, есть фотозона, а за сторис с отметкой — магнит в подарок.",
+        "ca": "Foto permesa, hi ha una zona de fotos, i si puges una story etiquetant-nos et regalen un imant."
+      }
+    },
+    "petsAllowed": "Ask Natalia at the front desk — she decides per visit.",
+    "minimumAgeUnaccompanied": 13
+  },
+  "staff": {
+    "frontDesk": {
+      "name": "Natalia",
+      "$comment": "Real receptionist. Ap redirects out-of-config questions to her by name."
+    }
+  },
+  "ownership": {
+    "displayName": "CGGallery, Antarctica",
+    "shortName": "CGGallery",
+    "$comment": "Full name 'CGGallery, Antarctica' for first introductions; 'CGGallery' for follow-ups in the same conversation. Ap can drop the 'Antarctica' tagline like a brand cue.",
+    "shortPitch": {
+      "es": "CGGallery, Antarctica — una experiencia inmersiva sobre pingüinos con Realidad Virtual, en pleno Lloret de Mar.",
+      "en": "CGGallery, Antarctica — an immersive penguin experience with Virtual Reality, right in Lloret de Mar.",
+      "ru": "CGGallery, Antarctica — иммерсивная выставка про пингвинов с VR-эпизодами в самом центре Льорет-де-Мар.",
+      "ca": "CGGallery, Antarctica — una experiència immersiva sobre pingüins amb Realitat Virtual, al centre de Lloret de Mar."
+    }
+  }
+}

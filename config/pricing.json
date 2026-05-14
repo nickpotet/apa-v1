@@ -1,0 +1,106 @@
+{
+  "$comment": "Authoritative source of prices. Ap MUST NOT quote prices outside this file. Currency EUR. Edit on the deployed kiosk via git pull; no rebuild needed.",
+  "currency": "EUR",
+  "lastUpdated": "2026-05-14",
+  "tickets": {
+    "general": {
+      "price": 12.00,
+      "label": {
+        "es": "General",
+        "en": "General",
+        "ru": "Общий",
+        "ca": "General"
+      },
+      "description": {
+        "es": "Adultos y niños a partir de 12 años. Incluye entrada + 2 episodios de Realidad Virtual.",
+        "en": "Adults and kids 12+. Includes entry + 2 VR episodes.",
+        "ru": "Взрослые и дети от 12 лет. Вход + 2 эпизода VR.",
+        "ca": "Adults i nens a partir de 12 anys. Inclou entrada + 2 episodis de Realitat Virtual."
+      }
+    },
+    "reduced": {
+      "price": 9.50,
+      "label": {
+        "es": "Reducida",
+        "en": "Reduced",
+        "ru": "Льготный",
+        "ca": "Reduïda"
+      },
+      "description": {
+        "es": "Niños 5–12, mayores de 65 años y personas con discapacidad. Incluye entrada + 2 episodios de VR.",
+        "en": "Kids 5–12, seniors 65+, and people with disabilities. Includes entry + 2 VR episodes.",
+        "ru": "Дети 5–12 лет, старше 65 и люди с инвалидностью. Вход + 2 эпизода VR.",
+        "ca": "Nens 5–12, majors de 65 anys i persones amb discapacitat. Inclou entrada + 2 episodis de VR."
+      }
+    },
+    "maxi": {
+      "price": 22.00,
+      "label": {
+        "es": "Maxi",
+        "en": "Maxi",
+        "ru": "Макси",
+        "ca": "Maxi"
+      },
+      "description": {
+        "es": "Entrada + 5 episodios de VR + regalo del Ice Cube Challenge + cuento en audio «Cuando los pingüinos miran al cielo».",
+        "en": "Entry + 5 VR episodes + Ice Cube Challenge gift + audio tale 'When the penguins look at the sky'.",
+        "ru": "Вход + 5 эпизодов VR + подарок Ice Cube Challenge + аудиосказка «Когда пингвины смотрят в небо».",
+        "ca": "Entrada + 5 episodis de VR + regal de l'Ice Cube Challenge + conte en àudio «Quan els pingüins miren el cel»."
+      }
+    },
+    "family": {
+      "price": 32.00,
+      "label": {
+        "es": "Familiar",
+        "en": "Family",
+        "ru": "Семейный",
+        "ca": "Familiar"
+      },
+      "description": {
+        "es": "2 adultos + 2 niños. Incluye entrada + 2 episodios de VR por persona.",
+        "en": "2 adults + 2 kids. Includes entry + 2 VR episodes per person.",
+        "ru": "2 взрослых + 2 ребёнка. Вход + 2 эпизода VR на каждого.",
+        "ca": "2 adults + 2 nens. Inclou entrada + 2 episodis de VR per persona."
+      }
+    },
+    "babies": {
+      "price": 0,
+      "label": {
+        "es": "Bebés",
+        "en": "Babies",
+        "ru": "Малыши",
+        "ca": "Nadons"
+      },
+      "description": {
+        "es": "Niños hasta 5 años — entrada gratuita.",
+        "en": "Kids under 5 — free entry.",
+        "ru": "Дети до 5 лет — бесплатно.",
+        "ca": "Nens fins a 5 anys — entrada gratuïta."
+      }
+    }
+  },
+  "rewards": {
+    "$comment": "The REAL conversion mechanic. Ap mentions this near the end of a conversation, soft, not pushy. Replaces the imaginary 'PINGÜINO' coupon from the v0 draft.",
+    "magnetForStoryOrReview": {
+      "trigger": "Instagram story tagging the venue OR a public review",
+      "benefit": "Free magnet of your choice from the selection at the front desk",
+      "say": {
+        "es": "Y oye — si subes una story etiquetándonos o dejas una reseña, te regalan un imán a elegir. Pequeño detalle, gran imán.",
+        "en": "Oh — if you post a story tagging us or leave a review, they give you a magnet to choose. Tiny gesture, big magnet.",
+        "ru": "А ещё — выложишь сторис с отметкой или оставишь отзыв — дарят магнит на выбор. Мелочь, а приятно.",
+        "ca": "Ah — i si puges una story etiquetant-nos o deixes una ressenya, et regalen un imant a triar. Detall petit, imant gran."
+      }
+    }
+  },
+  "vrUpsell": {
+    "$comment": "Standard admission includes 2 VR episodes. Remaining episodes are paid separately; only Natalia can quote the current price.",
+    "includedEpisodesOnStandardTickets": 2,
+    "extraEpisodesPaidSeparately": true,
+    "extraEpisodePrice": {
+      "es": "El precio del VR extra te lo dice Natalia.",
+      "en": "Natalia will tell you the price for extra VR.",
+      "ru": "Цену на дополнительный VR скажет Наталия.",
+      "ca": "La Natalia et dirà el preu del VR extra."
+    }
+  }
+}
