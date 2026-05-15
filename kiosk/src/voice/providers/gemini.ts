@@ -21,6 +21,15 @@ function toBase64(buf: ArrayBuffer): string {
   return btoa(s);
 }
 
+function buildInstructions(config: VoiceProviderConfig): string {
+  if (!config.languageLock) {
+    return `${config.systemPrompt}\n\n${activeLanguageInstruction(config.initialLanguage)}`;
+  }
+
+  const languageGuard = lockedLanguageInstruction(config.languageLock);
+  return `${languageGuard}\n\n${config.systemPrompt}\n\n${languageGuard}`;
+}
+
 export class GeminiVoiceProvider implements VoiceProvider {
   readonly name = 'Gemini Flash Live';
   readonly model = MODEL;
@@ -78,9 +87,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
         config: {
           responseModalities: [Modality.AUDIO],
           systemInstruction: {
-            parts: [{
-              text: `${config.systemPrompt}\n\n${config.languageLock ? lockedLanguageInstruction(config.languageLock) : activeLanguageInstruction(config.initialLanguage)}`,
-            }],
+            parts: [{ text: buildInstructions(config) }],
           },
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } },
@@ -160,17 +167,20 @@ export class GeminiVoiceProvider implements VoiceProvider {
     const parts = sc.modelTurn?.parts ?? [];
     for (const part of parts) {
       if (part.inlineData?.mimeType?.startsWith('audio/') && part.inlineData.data) {
+        if (!this.sawResponseAudio) {
+          this.playback.startResponse(
+            () => ev.onSpeakingStart(),
+            () => {
+              if (!sc.interrupted) ev.onSpeakingEnd();
+              this.maybeCompleteResponse();
+            },
+            (event, data) => ev.onDebug?.(event, data),
+          );
+        }
         this.sawResponseAudio = true;
         ev.onDebug?.('response_audio_chunk');
         this.clearResponseWatchdog();
-        this.playback.enqueue(
-          part.inlineData.data,
-          () => ev.onSpeakingStart(),
-          () => {
-            if (!sc.interrupted) ev.onSpeakingEnd();
-            this.maybeCompleteResponse();
-          },
-        );
+        this.playback.enqueuePcm(part.inlineData.data);
       }
       if (part.text) ev.onTranscript({ role: 'ap', text: part.text });
     }
@@ -203,6 +213,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
       }
       this.responseComplete = true;
       this.clearResponseWatchdog();
+      this.playback.finishResponse();
       this.maybeCompleteResponse();
     }
   }

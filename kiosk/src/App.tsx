@@ -37,6 +37,7 @@ export function App() {
   const convStart  = useRef<number | null>(null);
   const convTrigger = useRef<string>('button');
   const startInProgress = useRef(false);
+  const listeningReady = useRef(false);
   const endRequested = useRef(false);
   const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const contextTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -52,6 +53,7 @@ export function App() {
     }
     convStart.current = null;
     startInProgress.current = false;
+    listeningReady.current = false;
     endRequested.current = false;
   }, []);
 
@@ -153,6 +155,7 @@ export function App() {
   }, [armContextExpiry]);
 
   const syncUiLanguageFromTranscript = useCallback((entry: TranscriptEntry) => {
+    if (entry.role !== 'user') return;
     if (languageLockRef.current) return;
     const detected = detectLanguage(entry.text, langRef.current);
     if (detected === langRef.current) return;
@@ -174,7 +177,8 @@ export function App() {
       transcriptRef.current.length > 0
         ? [
             '## Recent local kiosk context',
-            'Use this only to preserve continuity across push-to-talk turns.',
+            'Use this only as historical meaning to preserve continuity across push-to-talk turns.',
+            'Do not copy the historical language; the current output language is controlled by the active language instructions.',
             'The current visitor speech always wins over stale context when the languages conflict.',
             'If the current turn contains no intelligible visitor speech, say briefly that you did not hear them and ask them to repeat. Do not infer the request from stale context alone.',
             ...transcriptRef.current.map((entry) => `${entry.role === 'user' ? 'Visitor' : 'Apa'}: ${entry.text}`),
@@ -200,6 +204,7 @@ export function App() {
   const events = useCallback(() => ({
     onListening:        () => {
       recordDebugEvent('app', 'listening');
+      listeningReady.current = true;
       setKiosk('listening');
     },
     onThinking:         () => {
@@ -261,12 +266,14 @@ export function App() {
 
     clearTimeout(contextTimer.current ?? undefined);
     startInProgress.current = true;
+    listeningReady.current = false;
     endRequested.current = false;
-      recordDebugEvent('app', 'turn_start_requested', {
-        contextEntries: transcriptRef.current.length,
-        currentLanguage: langRef.current,
-        languageLock: languageLockRef.current,
-      });
+    setKiosk('preparing');
+    recordDebugEvent('app', 'turn_start_requested', {
+      contextEntries: transcriptRef.current.length,
+      currentLanguage: langRef.current,
+      languageLock: languageLockRef.current,
+    });
 
     try {
       const sessionToken = await requestVoiceAccess();
@@ -276,9 +283,17 @@ export function App() {
         return;
       }
 
+      if (endRequested.current && !listeningReady.current) {
+        recordDebugEvent('app', 'turn_cancelled_before_capture');
+        finishDebugTurn('cancelled_before_capture');
+        resetConversation(false);
+        showTransientError();
+        return;
+      }
+
       convStart.current = Date.now();
       convTrigger.current = 'button';
-      beginDebugTurn(providerRef.current.name, langRef.current, transcriptRef.current.length);
+      beginDebugTurn(providerRef.current.name, langRef.current, transcriptRef.current.length, languageLockRef.current);
       recordDebugEvent('app', 'turn_started', {
         provider: providerRef.current.name,
         contextEntries: transcriptRef.current.length,
@@ -286,7 +301,16 @@ export function App() {
       });
       await providerRef.current.start(providerConfig(sessionToken), events());
       startInProgress.current = false;
-      if (endRequested.current) providerRef.current.endTurn();
+      if (endRequested.current) {
+        if (listeningReady.current) {
+          providerRef.current.endTurn();
+        } else {
+          recordDebugEvent('app', 'turn_cancelled_before_listening');
+          providerRef.current.stop().catch(() => {});
+          resetConversation(false);
+          showTransientError();
+        }
+      }
     } catch (e) {
       console.error('[voice start]', e);
       providerRef.current.stop().catch(() => {});
@@ -298,7 +322,7 @@ export function App() {
   const finishTalkTurn = useCallback(() => {
     if (startInProgress.current) {
       endRequested.current = true;
-      recordDebugEvent('app', 'turn_end_queued');
+      recordDebugEvent('app', 'turn_end_queued', { listeningReady: listeningReady.current });
       return;
     }
     recordDebugEvent('app', 'turn_end_requested');

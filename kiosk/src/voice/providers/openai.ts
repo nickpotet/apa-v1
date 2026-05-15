@@ -20,6 +20,15 @@ function toBase64(buf: ArrayBuffer): string {
 
 type RtEvent = Record<string, unknown>;
 
+function buildInstructions(config: VoiceProviderConfig): string {
+  if (!config.languageLock) {
+    return `${config.systemPrompt}\n\n${activeLanguageInstruction(config.initialLanguage)}`;
+  }
+
+  const languageGuard = lockedLanguageInstruction(config.languageLock);
+  return `${languageGuard}\n\n${config.systemPrompt}\n\n${languageGuard}`;
+}
+
 export class OpenAIRealtimeProvider implements VoiceProvider {
   readonly name = 'OpenAI Realtime';
   readonly model = MODEL;
@@ -88,7 +97,7 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
             type: 'session.update',
             session: {
               model: MODEL,
-              instructions: `${config.systemPrompt}\n\n${config.languageLock ? lockedLanguageInstruction(config.languageLock) : activeLanguageInstruction(config.initialLanguage)}`,
+              instructions: buildInstructions(config),
               voice: VOICE,
               input_audio_format:  'pcm16',
               output_audio_format: 'pcm16',
@@ -143,17 +152,20 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
     switch (msg.type) {
       case 'response.audio.delta': {
         const delta = msg.delta as string;
+        if (!this.sawResponseAudio) {
+          this.playback.startResponse(
+            () => ev.onSpeakingStart(),
+            () => {
+              ev.onSpeakingEnd();
+              this.maybeCompleteResponse();
+            },
+            (event, data) => ev.onDebug?.(event, data),
+          );
+        }
         this.sawResponseAudio = true;
         ev.onDebug?.('response_audio_chunk');
         this.clearResponseWatchdog();
-        this.playback.enqueue(
-          delta,
-          () => ev.onSpeakingStart(),
-          () => {
-            ev.onSpeakingEnd();
-            this.maybeCompleteResponse();
-          },
-        );
+        this.playback.enqueuePcm(delta);
         break;
       }
       case 'response.audio_transcript.delta':
@@ -189,6 +201,7 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
         }
         this.responseComplete = true;
         this.clearResponseWatchdog();
+        this.playback.finishResponse();
         this.maybeCompleteResponse();
         break;
       case 'input_audio_buffer.speech_started':

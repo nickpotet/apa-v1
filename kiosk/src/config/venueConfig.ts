@@ -27,6 +27,7 @@ export const LAST_ENTRY_MIN = 15;
 export const UI_COPY: Record<Language, {
   talkButton:     string;
   talkButtonHeld: string;
+  preparing:      string;
   listening:      string;
   thinking:       string;
   speaking:       string;
@@ -43,6 +44,7 @@ export const UI_COPY: Record<Language, {
   es: {
     talkButton:     'Mantén para hablar',
     talkButtonHeld: 'Suelta al terminar',
+    preparing:      'Preparando…',
     listening:      'Escuchando…',
     thinking:       'Pensando…',
     speaking:       'Apa habla…',
@@ -59,6 +61,7 @@ export const UI_COPY: Record<Language, {
   en: {
     talkButton:     'Hold to talk',
     talkButtonHeld: 'Release when done',
+    preparing:      'Preparing…',
     listening:      'Listening…',
     thinking:       'Thinking…',
     speaking:       'Apa is speaking…',
@@ -75,6 +78,7 @@ export const UI_COPY: Record<Language, {
   ru: {
     talkButton:     'Удерживай, чтобы говорить',
     talkButtonHeld: 'Отпусти, когда закончишь',
+    preparing:      'Готовлюсь…',
     listening:      'Слушаю…',
     thinking:       'Думаю…',
     speaking:       'Апа говорит…',
@@ -91,6 +95,7 @@ export const UI_COPY: Record<Language, {
   ca: {
     talkButton:     'Mantén per parlar',
     talkButtonHeld: 'Deixa anar en acabar',
+    preparing:      'Preparant…',
     listening:      'Escoltant…',
     thinking:       'Pensant…',
     speaking:       "L'Apa parla…",

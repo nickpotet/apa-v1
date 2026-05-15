@@ -12,11 +12,13 @@ interface Props {
 export function TalkButton({ lang, kioskState, onTalkStart, onTalkEnd }: Props) {
   const copy = UI_COPY[lang];
   const isListening = kioskState === 'listening';
-  const isBusy      = isListening || kioskState === 'thinking' || kioskState === 'speaking';
+  const isPreparing = kioskState === 'preparing';
+  const isBusy      = isPreparing || isListening || kioskState === 'thinking' || kioskState === 'speaking';
   const isBlocked   = kioskState === 'capped' || kioskState === 'offline';
 
   const label = (() => {
     switch (kioskState) {
+      case 'preparing': return copy.preparing;
       case 'listening': return copy.talkButtonHeld;
       case 'thinking':  return copy.thinking;
       case 'speaking':  return copy.speaking;
@@ -28,6 +30,7 @@ export function TalkButton({ lang, kioskState, onTalkStart, onTalkEnd }: Props) 
   })();
 
   const cls = (() => {
+    if (isPreparing) return 'cursor-default bg-sky-500/70 text-white/80';
     if (isListening) return 'scale-[0.97] bg-sky-300 text-[#0b0f1a] shadow-[0_0_56px_rgba(125,211,252,0.6)]';
     if (kioskState === 'error') return 'cursor-default bg-red-500/80 text-white';
     if (isBusy)      return 'cursor-default bg-white/8 text-white/40';
@@ -45,7 +48,7 @@ export function TalkButton({ lang, kioskState, onTalkStart, onTalkEnd }: Props) 
         ].join(' ')}
         onPointerDown={() => { if (!isBusy && !isBlocked && kioskState !== 'error') onTalkStart(); }}
         onPointerUp={onTalkEnd}
-        onPointerLeave={() => { if (isListening) onTalkEnd(); }}
+        onPointerLeave={() => { if (isPreparing || isListening) onTalkEnd(); }}
         onContextMenu={(e) => e.preventDefault()}
       >
         {label}

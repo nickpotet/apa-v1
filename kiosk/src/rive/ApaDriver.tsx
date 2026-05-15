@@ -3,6 +3,7 @@ import type { KioskState } from '../types';
 
 const RING: Record<KioskState, string> = {
   idle:      'ring-white/10 shadow-[0_0_70px_rgba(125,211,252,0.14)]',
+  preparing: 'ring-sky-400/40 shadow-[0_0_80px_rgba(56,189,248,0.18)]',
   listening: 'ring-sky-400/70 shadow-[0_0_90px_rgba(56,189,248,0.30)]',
   thinking:  'ring-amber-400/70 shadow-[0_0_90px_rgba(251,191,36,0.24)]',
   speaking:  'ring-emerald-400/70 shadow-[0_0_90px_rgba(52,211,153,0.28)]',
@@ -22,6 +23,7 @@ const ACCENT: Record<Language, string> = {
 
 const EYE: Record<KioskState, { left: string; right: string }> = {
   idle:      { left: 'M93 118c0 5-3 9-8 9s-8-4-8-9 3-9 8-9 8 4 8 9Z', right: 'M151 118c0 5-3 9-8 9s-8-4-8-9 3-9 8-9 8 4 8 9Z' },
+  preparing: { left: 'M95 111c-2 5-6 8-11 7s-8-5-7-10c2-5 6-8 11-7s8 5 7 10Z', right: 'M153 108c1 5-2 9-7 10s-10-2-11-7 2-9 7-10 10 2 11 7Z' },
   listening: { left: 'M95 115c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10Z', right: 'M153 115c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10Z' },
   thinking:  { left: 'M95 111c-2 5-6 8-11 7s-8-5-7-10c2-5 6-8 11-7s8 5 7 10Z', right: 'M153 108c1 5-2 9-7 10s-10-2-11-7 2-9 7-10 10 2 11 7Z' },
   speaking:  { left: 'M94 116c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9Z', right: 'M152 116c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9Z' },
@@ -40,6 +42,7 @@ interface Props {
 function stateClass(kioskState: KioskState): string {
   if (kioskState === 'speaking') return 'apa--speaking';
   if (kioskState === 'listening') return 'apa--listening';
+  if (kioskState === 'preparing') return 'apa--thinking';
   if (kioskState === 'thinking') return 'apa--thinking';
   if (kioskState === 'excited') return 'apa--excited';
   if (kioskState === 'sleeping' || kioskState === 'capped') return 'apa--sleeping';

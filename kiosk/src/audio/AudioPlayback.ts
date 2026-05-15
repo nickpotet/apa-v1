@@ -1,129 +1,186 @@
-// Plays back PCM16 audio chunks from the Gemini response.
-// Gemini Live outputs PCM16 at 24 kHz mono — chunks arrive incrementally
-// and are queued so playback is gapless.
+type PlaybackDebug = (event: string, data?: Record<string, unknown>) => void;
 
-const PLAYBACK_IDLE_GRACE_MS = 1200;
-const PLAYBACK_SCHEDULE_AHEAD_S = 0.12;
-const PLAYBACK_MIN_START_BUFFER_S = 0.18;
-const PLAYBACK_MAX_START_DELAY_MS = 60;
+const OUTPUT_SAMPLE_RATE = 24_000;
+const INITIAL_BUFFER_MS = 600;
+
+type PlaybackMessage =
+  | { type: 'started'; bufferedSamples: number }
+  | { type: 'status'; bufferedSamples: number; underrunCount: number }
+  | { type: 'underrun'; underrunCount: number }
+  | { type: 'drainComplete'; underrunCount: number };
+
+function decodePcm16(base64: string): Float32Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+  const int16 = new Int16Array(bytes.buffer);
+  const float32 = new Float32Array(int16.length);
+  for (let i = 0; i < int16.length; i++) {
+    float32[i] = int16[i] / (int16[i] < 0 ? 0x8000 : 0x7fff);
+  }
+  return float32;
+}
 
 export class AudioPlayback {
   private ctx: AudioContext | null = null;
-  private nextAt = 0;
-  private activeSources = 0;
-  private doneTimer: ReturnType<typeof setTimeout> | null = null;
-  private startTimer: ReturnType<typeof setTimeout> | null = null;
-  private generation = 0;
-  private pendingBuffers: AudioBuffer[] = [];
-  private pendingDuration = 0;
+  private node: AudioWorkletNode | null = null;
+  private readyPromise: Promise<void> | null = null;
+  private pendingBeforeReady: Float32Array[] = [];
+  private responseOpen = false;
+  private finishWhenReady = false;
+  private playing = false;
   private onPlaying: (() => void) | null = null;
   private onDone: (() => void) | null = null;
+  private onDebug: PlaybackDebug | null = null;
+  private underrunCount = 0;
 
   get isPlaying(): boolean {
-    return this.ctx !== null && (this.activeSources > 0 || this.pendingBuffers.length > 0 || this.nextAt > this.ctx.currentTime);
+    return this.responseOpen || this.playing || this.pendingBeforeReady.length > 0;
   }
 
-  /** Queue one base64-encoded PCM16 chunk (24 kHz mono). Returns promise that resolves when done playing. */
-  enqueue(base64: string, onPlaying: () => void, onDone: () => void): void {
-    const continuingStream = this.activeSources > 0 || this.doneTimer !== null;
-    clearTimeout(this.doneTimer ?? undefined);
-    this.doneTimer = null;
-    clearTimeout(this.startTimer ?? undefined);
-    this.startTimer = null;
-
-    const ctx = this.ensureContext();
+  startResponse(onPlaying: () => void, onDone: () => void, onDebug?: PlaybackDebug): void {
+    this.interrupt();
+    this.responseOpen = true;
+    this.finishWhenReady = false;
+    this.playing = false;
+    this.underrunCount = 0;
     this.onPlaying = onPlaying;
     this.onDone = onDone;
+    this.onDebug = onDebug ?? null;
+    void this.ensureReady();
+  }
 
-    // Resume if suspended by browser autoplay policy (requires prior user gesture).
-    if (ctx.state === 'suspended') ctx.resume();
-    const binary = atob(base64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    const int16 = new Int16Array(bytes.buffer);
-    const float32 = new Float32Array(int16.length);
-    for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 0x7fff;
+  enqueuePcm(base64: string): void {
+    if (!this.responseOpen) return;
 
-    const buf = ctx.createBuffer(1, float32.length, 24000);
-    buf.copyToChannel(float32, 0);
-    this.pendingBuffers.push(buf);
-    this.pendingDuration += buf.duration;
+    const samples = decodePcm16(base64);
+    if (!this.node) {
+      this.pendingBeforeReady.push(samples);
+      void this.ensureReady();
+      return;
+    }
+    this.postSamples(samples);
+  }
 
-    if (continuingStream || this.pendingDuration >= PLAYBACK_MIN_START_BUFFER_S) {
-      this.flushPendingBuffers();
+  finishResponse(): void {
+    if (!this.responseOpen) return;
+
+    if (!this.node) {
+      this.finishWhenReady = true;
+      void this.ensureReady();
       return;
     }
 
-    this.startTimer = setTimeout(() => {
-      this.startTimer = null;
-      this.flushPendingBuffers();
-    }, PLAYBACK_MAX_START_DELAY_MS);
+    this.node.port.postMessage({ type: 'finish' });
+    this.onDebug?.('playback_finish_requested', { underrunCount: this.underrunCount });
   }
 
-  /** Immediately stop all playback (model interrupted). */
   interrupt(): void {
-    clearTimeout(this.doneTimer ?? undefined);
-    this.doneTimer = null;
-    clearTimeout(this.startTimer ?? undefined);
-    this.startTimer = null;
-    this.generation++;
-    this.closeContext();
-    this.nextAt = 0;
-    this.activeSources = 0;
-    this.pendingBuffers = [];
-    this.pendingDuration = 0;
+    this.responseOpen = false;
+    this.finishWhenReady = false;
+    this.playing = false;
+    this.pendingBeforeReady = [];
+    this.underrunCount = 0;
     this.onPlaying = null;
     this.onDone = null;
+    this.onDebug = null;
+
+    try { this.node?.port.postMessage({ type: 'reset' }); } catch {}
+    this.node?.disconnect();
+    this.node = null;
+    this.readyPromise = null;
+    this.ctx?.close().catch(() => {});
+    this.ctx = null;
   }
 
-  private ensureContext(): AudioContext {
-    this.ctx ??= new AudioContext({ sampleRate: 24000 });
-    return this.ctx;
+  private async ensureReady(): Promise<void> {
+    if (this.readyPromise) return this.readyPromise;
+
+    this.readyPromise = (async () => {
+      this.ctx = new AudioContext({ sampleRate: OUTPUT_SAMPLE_RATE });
+      if (this.ctx.state === 'suspended') await this.ctx.resume();
+
+      await this.ctx.audioWorklet.addModule('/playback-worklet.js');
+      if (!this.ctx) return;
+
+      const node = new AudioWorkletNode(this.ctx, 'playback-processor');
+      node.port.onmessage = (event: MessageEvent<PlaybackMessage>) => this.handleWorkletMessage(event.data);
+      node.connect(this.ctx.destination);
+      node.port.postMessage({
+        type: 'configure',
+        initialBufferSamples: Math.round(OUTPUT_SAMPLE_RATE * INITIAL_BUFFER_MS / 1000),
+      });
+
+      this.node = node;
+      this.onDebug?.('playback_worklet_ready', { initialBufferMs: INITIAL_BUFFER_MS });
+
+      for (const samples of this.pendingBeforeReady) {
+        this.postSamples(samples);
+      }
+      this.pendingBeforeReady = [];
+
+      if (this.finishWhenReady) {
+        this.finishWhenReady = false;
+        this.finishResponse();
+      }
+    })().catch((err) => {
+      this.onDebug?.('playback_worklet_error', { message: String((err as Error).message ?? err) });
+      this.finishPlayback();
+    });
+
+    return this.readyPromise;
   }
 
-  private flushPendingBuffers(): void {
-    const ctx = this.ctx;
-    const onPlaying = this.onPlaying;
-    const onDone = this.onDone;
-    if (!ctx || !onPlaying || !onDone || this.pendingBuffers.length === 0) return;
+  private postSamples(samples: Float32Array): void {
+    if (!this.node) return;
+    this.node.port.postMessage({ type: 'append', samples }, [samples.buffer]);
+  }
 
-    while (this.pendingBuffers.length > 0) {
-      const buf = this.pendingBuffers.shift()!;
-      this.pendingDuration = Math.max(0, this.pendingDuration - buf.duration);
-
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      src.connect(ctx.destination);
-
-      const startAt = Math.max(ctx.currentTime + PLAYBACK_SCHEDULE_AHEAD_S, this.nextAt);
-      this.nextAt = startAt + buf.duration;
-      src.start(startAt);
-
-      if (this.activeSources === 0) onPlaying();
-      this.activeSources++;
-      const sourceGeneration = this.generation;
-
-      src.onended = () => {
-        if (sourceGeneration !== this.generation) return;
-        this.activeSources--;
-        if (this.activeSources === 0 && this.pendingBuffers.length === 0) {
-          this.doneTimer = setTimeout(() => {
-            this.doneTimer = null;
-            if (this.activeSources === 0 && this.pendingBuffers.length === 0) {
-              this.closeContext();
-              this.onDone?.();
-              this.onPlaying = null;
-              this.onDone = null;
-            }
-          }, PLAYBACK_IDLE_GRACE_MS);
-        }
-      };
+  private handleWorkletMessage(message: PlaybackMessage): void {
+    switch (message.type) {
+      case 'started':
+        this.playing = true;
+        this.onDebug?.('playback_started', {
+          bufferedMs: Math.round(message.bufferedSamples / OUTPUT_SAMPLE_RATE * 1000),
+        });
+        this.onPlaying?.();
+        break;
+      case 'status':
+        this.underrunCount = message.underrunCount;
+        this.onDebug?.('playback_status', {
+          bufferedMs: Math.round(message.bufferedSamples / OUTPUT_SAMPLE_RATE * 1000),
+          underrunCount: message.underrunCount,
+        });
+        break;
+      case 'underrun':
+        this.underrunCount = message.underrunCount;
+        this.onDebug?.('playback_underrun', { underrunCount: message.underrunCount });
+        break;
+      case 'drainComplete':
+        this.underrunCount = message.underrunCount;
+        this.onDebug?.('playback_drain_complete', { underrunCount: message.underrunCount });
+        this.finishPlayback();
+        break;
     }
   }
 
-  private closeContext(): void {
+  private finishPlayback(): void {
+    const onDone = this.onDone;
+    this.responseOpen = false;
+    this.finishWhenReady = false;
+    this.playing = false;
+    this.pendingBeforeReady = [];
+    this.onPlaying = null;
+    this.onDone = null;
+    this.onDebug = null;
+
+    this.node?.disconnect();
+    this.node = null;
+    this.readyPromise = null;
     this.ctx?.close().catch(() => {});
     this.ctx = null;
-    this.nextAt = 0;
+
+    onDone?.();
   }
 }

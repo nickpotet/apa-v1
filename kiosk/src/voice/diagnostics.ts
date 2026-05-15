@@ -11,6 +11,7 @@ type DebugTurn = {
   id: string;
   provider: string;
   initialLanguage: Language;
+  languageLock: Language | null;
   startedAt: string;
   finishedAt?: string;
   finishReason?: string;
@@ -39,7 +40,12 @@ function ensureState(): DiagnosticsState | null {
   return window.__apaDiagnostics;
 }
 
-export function beginDebugTurn(provider: string, initialLanguage: Language, contextEntries: number): void {
+export function beginDebugTurn(
+  provider: string,
+  initialLanguage: Language,
+  contextEntries: number,
+  languageLock: Language | null,
+): void {
   const state = ensureState();
   if (!state) return;
 
@@ -47,6 +53,7 @@ export function beginDebugTurn(provider: string, initialLanguage: Language, cont
     id: `${Date.now()}`,
     provider,
     initialLanguage,
+    languageLock,
     startedAt: new Date().toISOString(),
     userTranscriptCount: 0,
     apTranscriptCount: 0,
