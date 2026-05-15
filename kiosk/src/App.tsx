@@ -12,6 +12,7 @@ import { requestMicrophonePermission } from './audio/microphonePermission';
 import { AttractLoop } from './audio/AttractLoop';
 import { ChipResponsePlayer } from './audio/ChipResponsePlayer';
 import { beginDebugTurn, finishDebugTurn, recordDebugEvent } from './voice/diagnostics';
+import { detectLanguage } from './voice/languageDetection';
 
 const IS_PAGES_DEMO = import.meta.env.VITE_PAGES_DEMO === '1';
 const DEMO_PROMPT = 'GitHub Pages demo mode. Static UI test only; realtime voice requires the local kiosk server.';
@@ -141,6 +142,18 @@ export function App() {
     armContextExpiry();
   }, [armContextExpiry]);
 
+  const syncUiLanguageFromTranscript = useCallback((entry: TranscriptEntry) => {
+    const detected = detectLanguage(entry.text, langRef.current);
+    if (detected === langRef.current) return;
+
+    recordDebugEvent('app', 'ui_language_synced_from_transcript', {
+      role: entry.role,
+      from: langRef.current,
+      to: detected,
+    });
+    setLang(detected);
+  }, []);
+
   const providerConfig = useCallback((sessionToken: string) => ({
     maxConversationSeconds: 75,
     initialLanguage: langRef.current,
@@ -198,6 +211,7 @@ export function App() {
       recordDebugEvent('app', t.role === 'user' ? 'user_transcript' : 'ap_transcript', {
         textLength: t.text.trim().length,
       });
+      syncUiLanguageFromTranscript(t);
       rememberTranscript(t);
     },
     onTimeoutNearing:   () => {
@@ -220,7 +234,7 @@ export function App() {
       resetConversation(true);
       setKiosk('idle');
     },
-  }), [rememberTranscript, resetConversation, showTransientError]);
+  }), [rememberTranscript, resetConversation, showTransientError, syncUiLanguageFromTranscript]);
 
   const startTalkTurn = useCallback(async () => {
     if (!systemPrompt) return;

@@ -2,6 +2,9 @@
 // Gemini Live outputs PCM16 at 24 kHz mono — chunks arrive incrementally
 // and are queued so playback is gapless.
 
+const PLAYBACK_IDLE_GRACE_MS = 900;
+const PLAYBACK_SCHEDULE_AHEAD_S = 0.03;
+
 export class AudioPlayback {
   private ctx: AudioContext | null = null;
   private nextAt = 0;
@@ -36,7 +39,7 @@ export class AudioPlayback {
     src.buffer = buf;
     src.connect(ctx.destination);
 
-    const startAt = Math.max(ctx.currentTime, this.nextAt);
+    const startAt = Math.max(ctx.currentTime + PLAYBACK_SCHEDULE_AHEAD_S, this.nextAt);
     this.nextAt = startAt + buf.duration;
     src.start(startAt);
 
@@ -54,7 +57,7 @@ export class AudioPlayback {
             this.closeContext();
             onDone();
           }
-        }, 250);
+        }, PLAYBACK_IDLE_GRACE_MS);
       }
     };
   }
@@ -77,5 +80,6 @@ export class AudioPlayback {
   private closeContext(): void {
     this.ctx?.close().catch(() => {});
     this.ctx = null;
+    this.nextAt = 0;
   }
 }
