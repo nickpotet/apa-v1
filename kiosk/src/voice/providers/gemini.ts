@@ -4,10 +4,10 @@
 
 import { GoogleGenAI, Modality } from '@google/genai';
 import type { Session } from '@google/genai';
-import type { VoiceProvider, VoiceProviderConfig, VoiceProviderEvents } from './VoiceProvider';
+import type { Language, VoiceProvider, VoiceProviderConfig, VoiceProviderEvents } from './VoiceProvider';
 import { AudioCapture } from '../../audio/AudioCapture';
 import { AudioPlayback } from '../../audio/AudioPlayback';
-import { detectLanguage } from '../languageDetection';
+import { activeLanguageInstruction, detectLanguage } from '../languageDetection';
 
 const MODEL = import.meta.env.VITE_GEMINI_MODEL ?? 'gemini-3.1-flash-live-preview';
 const VOICE = 'Puck'; // playful, warm — fits Apa's personality
@@ -38,6 +38,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
   private activityOpen = false;
   private pendingAudioChunks: ArrayBuffer[] = [];
   private responseComplete = false;
+  private language: Language = 'es';
 
   async start(config: VoiceProviderConfig, events: VoiceProviderEvents): Promise<void> {
     await this.stopActiveSession();
@@ -48,6 +49,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.activityOpen = false;
     this.pendingAudioChunks = [];
     this.responseComplete = false;
+    this.language = config.initialLanguage;
 
     try {
       await this.capture.start((pcm16) => {
@@ -69,7 +71,9 @@ export class GeminiVoiceProvider implements VoiceProvider {
         model: MODEL,
         config: {
           responseModalities: [Modality.AUDIO],
-          systemInstruction: { parts: [{ text: config.systemPrompt }] },
+          systemInstruction: {
+            parts: [{ text: `${config.systemPrompt}\n\n${activeLanguageInstruction(config.initialLanguage)}` }],
+          },
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } },
           },
@@ -162,7 +166,8 @@ export class GeminiVoiceProvider implements VoiceProvider {
 
     if (sc.inputTranscription?.text) {
       ev.onTranscript({ role: 'user', text: sc.inputTranscription.text });
-      ev.onLanguageDetected(detectLanguage(sc.inputTranscription.text));
+      this.language = detectLanguage(sc.inputTranscription.text, this.language);
+      ev.onLanguageDetected(this.language);
     }
 
     if (sc.turnComplete) {

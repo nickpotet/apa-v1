@@ -2,9 +2,10 @@
 // CLAUDE.md rule: this is the ONLY file allowed to import/use OpenAI's Realtime WS.
 // Swap in App.tsx through VOICE_PROVIDER=openai for the Day 7 field-test bake-off.
 import type { VoiceProvider, VoiceProviderConfig, VoiceProviderEvents } from './VoiceProvider';
+import type { Language } from './VoiceProvider';
 import { AudioCapture } from '../../audio/AudioCapture';
 import { AudioPlayback } from '../../audio/AudioPlayback';
-import { detectLanguage } from '../languageDetection';
+import { activeLanguageInstruction, detectLanguage } from '../languageDetection';
 
 const MODEL = 'gpt-realtime';
 const VOICE = 'verse'; // warm, natural — closest to Apa's personality in OpenAI voices
@@ -33,12 +34,14 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
   private responseTimeout: ReturnType<typeof setTimeout> | null = null;
   private stopped = true;
   private responseComplete = false;
+  private language: Language = 'es';
 
   async start(config: VoiceProviderConfig, events: VoiceProviderEvents): Promise<void> {
     await this.stopActiveSession();
     this.stopped = false;
     this.events  = events;
     this.responseComplete = false;
+    this.language = config.initialLanguage;
 
     try {
       await this.capture.start((pcm16) => {
@@ -73,7 +76,7 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
             type: 'session.update',
             session: {
               model: MODEL,
-              instructions: config.systemPrompt,
+              instructions: `${config.systemPrompt}\n\n${activeLanguageInstruction(config.initialLanguage)}`,
               voice: VOICE,
               input_audio_format:  'pcm16',
               output_audio_format: 'pcm16',
@@ -139,7 +142,8 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
       case 'conversation.item.input_audio_transcription.completed': {
         const transcript = msg.transcript as string;
         ev.onTranscript({ role: 'user', text: transcript });
-        ev.onLanguageDetected(detectLanguage(transcript));
+        this.language = detectLanguage(transcript, this.language);
+        ev.onLanguageDetected(this.language);
         break;
       }
       case 'response.output_item.done': {

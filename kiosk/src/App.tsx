@@ -18,6 +18,13 @@ const DEMO_PROMPT = 'GitHub Pages demo mode. Static UI test only; realtime voice
 const input    = new ArcadeButtonMic();
 const attract  = new AttractLoop();
 const chipPlayer = new ChipResponsePlayer();
+const SESSION_CONTEXT_TTL_MS = 120_000;
+const MAX_CONTEXT_LINES = 8;
+
+type TranscriptEntry = {
+  role: 'user' | 'ap';
+  text: string;
+};
 
 export function App() {
   const [lang, setLang]           = useState<Language>('es');
@@ -32,6 +39,8 @@ export function App() {
   const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nextVoiceAccess = useRef<VoiceAccess | null>(null);
   const voiceAccessRequest = useRef<Promise<VoiceAccess | null> | null>(null);
+  const transcriptRef = useRef<TranscriptEntry[]>([]);
+  const lastInteractionAt = useRef(0);
   langRef.current = lang;
 
   const resetConversation = useCallback((shouldLog: boolean) => {
@@ -109,10 +118,37 @@ export function App() {
     return () => clearTimeout(errorTimer.current ?? undefined);
   }, []);
 
+  const resetStaleContext = useCallback(() => {
+    if (Date.now() - lastInteractionAt.current > SESSION_CONTEXT_TTL_MS) {
+      transcriptRef.current = [];
+    }
+  }, []);
+
+  const rememberTranscript = useCallback((entry: TranscriptEntry) => {
+    const text = entry.text.trim();
+    if (!text) return;
+
+    lastInteractionAt.current = Date.now();
+    transcriptRef.current = [
+      ...transcriptRef.current,
+      { ...entry, text },
+    ].slice(-MAX_CONTEXT_LINES);
+  }, []);
+
   const providerConfig = useCallback((sessionToken: string) => ({
     maxConversationSeconds: 75,
     initialLanguage: langRef.current,
-    systemPrompt: systemPrompt ?? '',
+    systemPrompt: [
+      systemPrompt ?? '',
+      transcriptRef.current.length > 0
+        ? [
+            '## Recent local kiosk context',
+            'Use this only to preserve continuity across push-to-talk turns.',
+            'Keep the active kiosk language if this context conflicts with the current visitor speech.',
+            ...transcriptRef.current.map((entry) => `${entry.role === 'user' ? 'Visitor' : 'Apa'}: ${entry.text}`),
+          ].join('\n')
+        : '',
+    ].filter(Boolean).join('\n\n'),
     ephemeralToken: sessionToken,
   }), [systemPrompt]);
 
@@ -135,7 +171,10 @@ export function App() {
     onSpeakingStart:    () => setKiosk('speaking'),
     onSpeakingEnd:      () => setKiosk(convStart.current !== null ? 'thinking' : 'idle'),
     onLanguageDetected: (l: Language) => setLang(l),
-    onTranscript:       (t: { role: 'user' | 'ap'; text: string }) => console.log(`[${t.role}]`, t.text),
+    onTranscript:       (t: TranscriptEntry) => {
+      console.log(`[${t.role}]`, t.text);
+      rememberTranscript(t);
+    },
     onTimeoutNearing:   () => console.log('[voice] timeout nearing'),
     onError:            (e: Error) => {
       console.error('[voice]', e);
@@ -146,12 +185,13 @@ export function App() {
       resetConversation(true);
       setKiosk('idle');
     },
-  }), [resetConversation, showTransientError]);
+  }), [rememberTranscript, resetConversation, showTransientError]);
 
   const startTalkTurn = useCallback(async () => {
     if (!systemPrompt) return;
     if (startInProgress.current || convStart.current !== null) return;
 
+    resetStaleContext();
     startInProgress.current = true;
     endRequested.current = false;
 
