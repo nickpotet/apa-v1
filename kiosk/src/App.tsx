@@ -133,7 +133,7 @@ export function App() {
     onListening:        () => setKiosk('listening'),
     onThinking:         () => setKiosk('thinking'),
     onSpeakingStart:    () => setKiosk('speaking'),
-    onSpeakingEnd:      () => setKiosk('idle'),
+    onSpeakingEnd:      () => setKiosk(convStart.current !== null ? 'thinking' : 'idle'),
     onLanguageDetected: (l: Language) => setLang(l),
     onTranscript:       (t: { role: 'user' | 'ap'; text: string }) => console.log(`[${t.role}]`, t.text),
     onTimeoutNearing:   () => console.log('[voice] timeout nearing'),
