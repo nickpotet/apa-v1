@@ -39,6 +39,8 @@ export class GeminiVoiceProvider implements VoiceProvider {
   private pendingAudioChunks: ArrayBuffer[] = [];
   private responseComplete = false;
   private language: Language = 'es';
+  private heardUserTranscript = false;
+  private sawResponseAudio = false;
 
   async start(config: VoiceProviderConfig, events: VoiceProviderEvents): Promise<void> {
     await this.stopActiveSession();
@@ -50,6 +52,8 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.pendingAudioChunks = [];
     this.responseComplete = false;
     this.language = config.initialLanguage;
+    this.heardUserTranscript = false;
+    this.sawResponseAudio = false;
 
     try {
       await this.capture.start((pcm16) => {
@@ -87,6 +91,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
           onopen: () => {
             if (this.stopped) return;
             console.log('[gemini] open');
+            events.onDebug?.('session_open', { model: MODEL });
             const cap = config.maxConversationSeconds;
             this.nearTimeout = setTimeout(() => events.onTimeoutNearing(), (cap - 10) * 1000);
             this.capTimeout  = setTimeout(() => this.close('timeout'), cap * 1000);
@@ -113,8 +118,13 @@ export class GeminiVoiceProvider implements VoiceProvider {
     if (this.turnEnded || !this.session) return;
     this.turnEnded = true;
     console.log(`[gemini] endTurn → activityEnd (sent ${this.chunksSent} audio chunks)`);
+    this.events?.onDebug?.('end_turn', { chunksSent: this.chunksSent });
     this.capture.stop();
     this.flushPendingAudioChunks();
+    if (this.chunksSent === 0) {
+      this.fail(new Error('Gemini turn ended before any audio chunks were captured'));
+      return;
+    }
     if (this.activityOpen) {
       this.session.sendRealtimeInput({ activityEnd: {} });
       this.activityOpen = false;
@@ -146,6 +156,8 @@ export class GeminiVoiceProvider implements VoiceProvider {
     const parts = sc.modelTurn?.parts ?? [];
     for (const part of parts) {
       if (part.inlineData?.mimeType?.startsWith('audio/') && part.inlineData.data) {
+        this.sawResponseAudio = true;
+        ev.onDebug?.('response_audio_chunk');
         this.clearResponseWatchdog();
         this.playback.enqueue(
           part.inlineData.data,
@@ -165,12 +177,26 @@ export class GeminiVoiceProvider implements VoiceProvider {
     }
 
     if (sc.inputTranscription?.text) {
+      this.heardUserTranscript = true;
       ev.onTranscript({ role: 'user', text: sc.inputTranscription.text });
       this.language = detectLanguage(sc.inputTranscription.text, this.language);
       ev.onLanguageDetected(this.language);
+      ev.onDebug?.('input_transcript', {
+        length: sc.inputTranscription.text.trim().length,
+        language: this.language,
+      });
     }
 
     if (sc.turnComplete) {
+      ev.onDebug?.('turn_complete', {
+        heardUserTranscript: this.heardUserTranscript,
+        sawResponseAudio: this.sawResponseAudio,
+        chunksSent: this.chunksSent,
+      });
+      if (!this.heardUserTranscript) {
+        this.fail(new Error('Gemini completed a turn without any user transcript'));
+        return;
+      }
       this.responseComplete = true;
       this.clearResponseWatchdog();
       this.maybeCompleteResponse();
@@ -252,6 +278,9 @@ export class GeminiVoiceProvider implements VoiceProvider {
       audio: { data: toBase64(pcm16), mimeType: 'audio/pcm;rate=16000' },
     });
     this.chunksSent++;
+    if (this.chunksSent === 1) {
+      this.events?.onDebug?.('first_audio_chunk_sent');
+    }
   }
 
   private startResponseWatchdog(): void {

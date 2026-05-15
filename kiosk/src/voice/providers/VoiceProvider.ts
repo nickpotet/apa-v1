@@ -25,6 +25,7 @@ export interface VoiceProviderEvents {
   onLanguageDetected: (lang: Language) => void;
   /** Fired ~10 s before the hard cap so the UI can show a wrap-up cue. */
   onTimeoutNearing: () => void;
+  onDebug?: (event: string, data?: Record<string, unknown>) => void;
   onError: (err: Error) => void;
   onEnd: (reason: 'user' | 'timeout' | 'error' | 'network' | 'complete') => void;
 }

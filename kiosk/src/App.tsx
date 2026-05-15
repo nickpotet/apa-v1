@@ -11,6 +11,7 @@ import { ArcadeButtonMic } from './audio/inputs/ArcadeButtonMic';
 import { requestMicrophonePermission } from './audio/microphonePermission';
 import { AttractLoop } from './audio/AttractLoop';
 import { ChipResponsePlayer } from './audio/ChipResponsePlayer';
+import { beginDebugTurn, finishDebugTurn, recordDebugEvent } from './voice/diagnostics';
 
 const IS_PAGES_DEMO = import.meta.env.VITE_PAGES_DEMO === '1';
 const DEMO_PROMPT = 'GitHub Pages demo mode. Static UI test only; realtime voice requires the local kiosk server.';
@@ -150,6 +151,7 @@ export function App() {
             '## Recent local kiosk context',
             'Use this only to preserve continuity across push-to-talk turns.',
             'The current visitor speech always wins over stale context when the languages conflict.',
+            'If the current turn contains no intelligible visitor speech, say briefly that you did not hear them and ask them to repeat. Do not infer the request from stale context alone.',
             ...transcriptRef.current.map((entry) => `${entry.role === 'user' ? 'Visitor' : 'Apa'}: ${entry.text}`),
           ].join('\n')
         : '',
@@ -171,22 +173,50 @@ export function App() {
   }, [fetchVoiceAccessOnce, prefetchVoiceAccess]);
 
   const events = useCallback(() => ({
-    onListening:        () => setKiosk('listening'),
-    onThinking:         () => setKiosk('thinking'),
-    onSpeakingStart:    () => setKiosk('speaking'),
-    onSpeakingEnd:      () => setKiosk(convStart.current !== null ? 'thinking' : 'idle'),
-    onLanguageDetected: (l: Language) => setLang(l),
+    onListening:        () => {
+      recordDebugEvent('app', 'listening');
+      setKiosk('listening');
+    },
+    onThinking:         () => {
+      recordDebugEvent('app', 'thinking');
+      setKiosk('thinking');
+    },
+    onSpeakingStart:    () => {
+      recordDebugEvent('app', 'speaking_start');
+      setKiosk('speaking');
+    },
+    onSpeakingEnd:      () => {
+      recordDebugEvent('app', 'speaking_end');
+      setKiosk(convStart.current !== null ? 'thinking' : 'idle');
+    },
+    onLanguageDetected: (l: Language) => {
+      recordDebugEvent('app', 'language_detected', { language: l });
+      setLang(l);
+    },
     onTranscript:       (t: TranscriptEntry) => {
       console.log(`[${t.role}]`, t.text);
+      recordDebugEvent('app', t.role === 'user' ? 'user_transcript' : 'ap_transcript', {
+        textLength: t.text.trim().length,
+      });
       rememberTranscript(t);
     },
-    onTimeoutNearing:   () => console.log('[voice] timeout nearing'),
+    onTimeoutNearing:   () => {
+      recordDebugEvent('app', 'timeout_nearing');
+      console.log('[voice] timeout nearing');
+    },
+    onDebug:            (event: string, data?: Record<string, unknown>) => {
+      recordDebugEvent('provider', event, data);
+    },
     onError:            (e: Error) => {
       console.error('[voice]', e);
+      recordDebugEvent('app', 'error', { message: e.message });
+      finishDebugTurn(`error:${e.message}`);
       resetConversation(false);
       showTransientError();
     },
     onEnd:              (_r: string) => {
+      recordDebugEvent('app', 'end', { reason: _r });
+      finishDebugTurn(_r);
       resetConversation(true);
       setKiosk('idle');
     },
@@ -199,17 +229,26 @@ export function App() {
     clearTimeout(contextTimer.current ?? undefined);
     startInProgress.current = true;
     endRequested.current = false;
+    recordDebugEvent('app', 'turn_start_requested', {
+      contextEntries: transcriptRef.current.length,
+      currentLanguage: langRef.current,
+    });
 
     try {
       const sessionToken = await requestVoiceAccess();
       if (!sessionToken) {
+        finishDebugTurn('no_token');
         resetConversation(false);
         return;
       }
 
       convStart.current = Date.now();
       convTrigger.current = 'button';
-      setKiosk('listening');
+      beginDebugTurn(providerRef.current.name, langRef.current, transcriptRef.current.length);
+      recordDebugEvent('app', 'turn_started', {
+        provider: providerRef.current.name,
+        contextEntries: transcriptRef.current.length,
+      });
       await providerRef.current.start(providerConfig(sessionToken), events());
       startInProgress.current = false;
       if (endRequested.current) providerRef.current.endTurn();
@@ -224,8 +263,10 @@ export function App() {
   const finishTalkTurn = useCallback(() => {
     if (startInProgress.current) {
       endRequested.current = true;
+      recordDebugEvent('app', 'turn_end_queued');
       return;
     }
+    recordDebugEvent('app', 'turn_end_requested');
     providerRef.current.endTurn();
   }, []);
 

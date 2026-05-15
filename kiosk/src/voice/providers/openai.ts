@@ -35,6 +35,9 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
   private stopped = true;
   private responseComplete = false;
   private language: Language = 'es';
+  private chunksSent = 0;
+  private heardUserTranscript = false;
+  private sawResponseAudio = false;
 
   async start(config: VoiceProviderConfig, events: VoiceProviderEvents): Promise<void> {
     await this.stopActiveSession();
@@ -42,6 +45,9 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
     this.events  = events;
     this.responseComplete = false;
     this.language = config.initialLanguage;
+    this.chunksSent = 0;
+    this.heardUserTranscript = false;
+    this.sawResponseAudio = false;
 
     try {
       await this.capture.start((pcm16) => {
@@ -50,6 +56,10 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
           type: 'input_audio_buffer.append',
           audio: toBase64(pcm16),
         }));
+        this.chunksSent++;
+        if (this.chunksSent === 1) {
+          this.events?.onDebug?.('first_audio_chunk_sent');
+        }
       });
 
       await new Promise<void>((resolve, reject) => {
@@ -90,6 +100,7 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
           this.nearTimeout = setTimeout(() => events.onTimeoutNearing(), (cap - 10) * 1000);
           this.capTimeout  = setTimeout(() => this.close('timeout'), cap * 1000);
 
+          events.onDebug?.('session_open', { model: MODEL });
           events.onListening();
           settled = true;
           resolve();
@@ -109,6 +120,11 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
 
   endTurn(): void {
     this.capture.stop();
+    this.events?.onDebug?.('end_turn', { chunksSent: this.chunksSent });
+    if (this.chunksSent === 0) {
+      this.fail(new Error('OpenAI turn ended before any audio chunks were captured'));
+      return;
+    }
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ type: 'input_audio_buffer.commit' }));
       this.ws.send(JSON.stringify({ type: 'response.create' }));
@@ -125,6 +141,8 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
     switch (msg.type) {
       case 'response.audio.delta': {
         const delta = msg.delta as string;
+        this.sawResponseAudio = true;
+        ev.onDebug?.('response_audio_chunk');
         this.clearResponseWatchdog();
         this.playback.enqueue(
           delta,
@@ -141,9 +159,14 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
         break;
       case 'conversation.item.input_audio_transcription.completed': {
         const transcript = msg.transcript as string;
+        this.heardUserTranscript = true;
         ev.onTranscript({ role: 'user', text: transcript });
         this.language = detectLanguage(transcript, this.language);
         ev.onLanguageDetected(this.language);
+        ev.onDebug?.('input_transcript', {
+          length: transcript.trim().length,
+          language: this.language,
+        });
         break;
       }
       case 'response.output_item.done': {
@@ -153,6 +176,15 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
         break;
       }
       case 'response.done':
+        ev.onDebug?.('turn_complete', {
+          heardUserTranscript: this.heardUserTranscript,
+          sawResponseAudio: this.sawResponseAudio,
+          chunksSent: this.chunksSent,
+        });
+        if (!this.heardUserTranscript) {
+          this.fail(new Error('OpenAI completed a turn without any user transcript'));
+          break;
+        }
         this.responseComplete = true;
         this.clearResponseWatchdog();
         this.maybeCompleteResponse();
