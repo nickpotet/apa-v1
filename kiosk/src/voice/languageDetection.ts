@@ -27,6 +27,16 @@ export function activeLanguageInstruction(lang: Language): string {
   ].join('\n');
 }
 
+export function lockedLanguageInstruction(lang: Language): string {
+  return [
+    '## Explicit visitor language choice',
+    `The visitor explicitly selected ${lang.toUpperCase()} (${LANGUAGE_NAME[lang]}) in the kiosk UI.`,
+    LANGUAGE_HINT[lang],
+    'Reply in this language for the whole turn, even if speech recognition is noisy or partial.',
+    'Only switch away from this language if the visitor explicitly asks you to change language.',
+  ].join('\n');
+}
+
 export function detectLanguage(text: string, fallback: Language): Language {
   const normalized = text
     .trim()
@@ -36,21 +46,17 @@ export function detectLanguage(text: string, fallback: Language): Language {
   if (!normalized) return fallback;
   if (/[Ѐ-ӿ]/.test(normalized)) return 'ru';
 
-  if (/\b(privet|zdravstvuyte|zdravstvuite|spasibo|pozhaluysta|pojaluysta|skolko|skolka|stoit|bilet|bilety|pingvin|pingviny|mozhno|mojno|kak|da|net|khorosho|horosho)\b/i.test(normalized)) {
-    return 'ru';
-  }
+  const score = (pattern: RegExp): number => [...normalized.matchAll(pattern)].length;
 
-  if (/\b(hello|hi|thanks|thank you|how much|ticket|tickets|price|family|photo|gift|what is this)\b/i.test(normalized)) {
-    return 'en';
-  }
+  const scores: Array<[Language, number]> = [
+    ['ru', score(/\b(privet|zdravstvuyte|zdravstvuite|spasibo|pozhaluysta|pojaluysta|skolko|skolka|stoit|bilet|bilety|pingvin|pingviny|mozhno|mojno|skazhite|kakoi|kakaya|kakie|gde|mne|menya|ya|deti|semya|semyi|horosho|khorosho)\b/gi)],
+    ['en', score(/\b(hello|hi|thanks|thank you|how much|ticket|tickets|price|family|photo|gift|what|where|when|please|want|with|for|open|closed|children|kids)\b/gi)],
+    ['es', score(/\b(hola|gracias|cuanto|cuánto|entrada|precio|familia|foto|regalo|que|qué|donde|dónde|quiero|puedo|con|para|horario|abierto|cerrado|niños|ninos)\b/gi)],
+    ['ca', score(/\b(hola|gracies|gràcies|quant|costa|tiquet|entrada|família|familia|foto|regal|què|aixo|això|vull|som|amb|obert|tancat|nens|nen)\b/gi)],
+  ];
 
-  if (/\b(hola|gracias|cuanto|cuánto|entrada|precio|familia|foto|regalo|que es|qué es|donde|dónde)\b/i.test(normalized)) {
-    return 'es';
-  }
-
-  if (/\b(hola|gracies|gràcies|quant|costa|tiquet|entrada|familia|família|foto|regal|què|aixo|això|vull|som|amb)\b/i.test(normalized)) {
-    return 'ca';
-  }
-
-  return fallback;
+  scores.sort((a, b) => b[1] - a[1]);
+  if (scores[0][1] === 0) return fallback;
+  if (scores[0][1] === scores[1][1]) return fallback;
+  return scores[0][0];
 }

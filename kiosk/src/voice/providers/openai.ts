@@ -5,7 +5,7 @@ import type { VoiceProvider, VoiceProviderConfig, VoiceProviderEvents } from './
 import type { Language } from './VoiceProvider';
 import { AudioCapture } from '../../audio/AudioCapture';
 import { AudioPlayback } from '../../audio/AudioPlayback';
-import { activeLanguageInstruction, detectLanguage } from '../languageDetection';
+import { activeLanguageInstruction, detectLanguage, lockedLanguageInstruction } from '../languageDetection';
 
 const MODEL = 'gpt-realtime';
 const VOICE = 'verse'; // warm, natural — closest to Apa's personality in OpenAI voices
@@ -35,6 +35,7 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
   private stopped = true;
   private responseComplete = false;
   private language: Language = 'es';
+  private languageLock: Language | null = null;
   private chunksSent = 0;
   private heardUserTranscript = false;
   private sawResponseAudio = false;
@@ -45,6 +46,7 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
     this.events  = events;
     this.responseComplete = false;
     this.language = config.initialLanguage;
+    this.languageLock = config.languageLock;
     this.chunksSent = 0;
     this.heardUserTranscript = false;
     this.sawResponseAudio = false;
@@ -86,7 +88,7 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
             type: 'session.update',
             session: {
               model: MODEL,
-              instructions: `${config.systemPrompt}\n\n${activeLanguageInstruction(config.initialLanguage)}`,
+              instructions: `${config.systemPrompt}\n\n${config.languageLock ? lockedLanguageInstruction(config.languageLock) : activeLanguageInstruction(config.initialLanguage)}`,
               voice: VOICE,
               input_audio_format:  'pcm16',
               output_audio_format: 'pcm16',
@@ -161,7 +163,7 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
         const transcript = msg.transcript as string;
         this.heardUserTranscript = true;
         ev.onTranscript({ role: 'user', text: transcript });
-        this.language = detectLanguage(transcript, this.language);
+        this.language = this.languageLock ?? detectLanguage(transcript, this.language);
         ev.onLanguageDetected(this.language);
         ev.onDebug?.('input_transcript', {
           length: transcript.trim().length,

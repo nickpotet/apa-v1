@@ -21,6 +21,7 @@ const input    = new ArcadeButtonMic();
 const attract  = new AttractLoop();
 const chipPlayer = new ChipResponsePlayer();
 const SESSION_CONTEXT_TTL_MS = 30_000;
+const DEFAULT_LANGUAGE: Language = 'es';
 
 type TranscriptEntry = {
   role: 'user' | 'ap';
@@ -28,7 +29,7 @@ type TranscriptEntry = {
 };
 
 export function App() {
-  const [lang, setLang]           = useState<Language>('es');
+  const [lang, setLang]           = useState<Language>(DEFAULT_LANGUAGE);
   const [kioskState, setKiosk]    = useState<KioskState>('idle');
   const [systemPrompt, setPrompt] = useState<string | null>(null);
   const providerRef = useRef<VoiceProvider>(createProvider(IS_PAGES_DEMO ? 'demo' : 'gemini'));
@@ -42,6 +43,7 @@ export function App() {
   const nextVoiceAccess = useRef<VoiceAccess | null>(null);
   const voiceAccessRequest = useRef<Promise<VoiceAccess | null> | null>(null);
   const transcriptRef = useRef<TranscriptEntry[]>([]);
+  const languageLockRef = useRef<Language | null>(null);
   langRef.current = lang;
 
   const resetConversation = useCallback((shouldLog: boolean) => {
@@ -128,6 +130,14 @@ export function App() {
     contextTimer.current = setTimeout(() => {
       contextTimer.current = null;
       transcriptRef.current = [];
+      languageLockRef.current = null;
+      if (langRef.current !== DEFAULT_LANGUAGE) {
+        recordDebugEvent('app', 'visitor_context_expired_reset_language', {
+          from: langRef.current,
+          to: DEFAULT_LANGUAGE,
+        });
+        setLang(DEFAULT_LANGUAGE);
+      }
     }, SESSION_CONTEXT_TTL_MS);
   }, []);
 
@@ -143,6 +153,7 @@ export function App() {
   }, [armContextExpiry]);
 
   const syncUiLanguageFromTranscript = useCallback((entry: TranscriptEntry) => {
+    if (languageLockRef.current) return;
     const detected = detectLanguage(entry.text, langRef.current);
     if (detected === langRef.current) return;
 
@@ -157,6 +168,7 @@ export function App() {
   const providerConfig = useCallback((sessionToken: string) => ({
     maxConversationSeconds: 75,
     initialLanguage: langRef.current,
+    languageLock: languageLockRef.current,
     systemPrompt: [
       systemPrompt ?? '',
       transcriptRef.current.length > 0
@@ -204,6 +216,13 @@ export function App() {
     },
     onLanguageDetected: (l: Language) => {
       recordDebugEvent('app', 'language_detected', { language: l });
+      if (languageLockRef.current && l !== languageLockRef.current) {
+        recordDebugEvent('app', 'language_detected_ignored_due_to_lock', {
+          detected: l,
+          locked: languageLockRef.current,
+        });
+        return;
+      }
       setLang(l);
     },
     onTranscript:       (t: TranscriptEntry) => {
@@ -243,10 +262,11 @@ export function App() {
     clearTimeout(contextTimer.current ?? undefined);
     startInProgress.current = true;
     endRequested.current = false;
-    recordDebugEvent('app', 'turn_start_requested', {
-      contextEntries: transcriptRef.current.length,
-      currentLanguage: langRef.current,
-    });
+      recordDebugEvent('app', 'turn_start_requested', {
+        contextEntries: transcriptRef.current.length,
+        currentLanguage: langRef.current,
+        languageLock: languageLockRef.current,
+      });
 
     try {
       const sessionToken = await requestVoiceAccess();
@@ -262,6 +282,7 @@ export function App() {
       recordDebugEvent('app', 'turn_started', {
         provider: providerRef.current.name,
         contextEntries: transcriptRef.current.length,
+        languageLock: languageLockRef.current,
       });
       await providerRef.current.start(providerConfig(sessionToken), events());
       startInProgress.current = false;
@@ -298,6 +319,12 @@ export function App() {
 
   const handleTalkEnd = finishTalkTurn;
 
+  const handleLanguageChange = useCallback((nextLanguage: Language) => {
+    languageLockRef.current = nextLanguage;
+    recordDebugEvent('app', 'language_locked_manually', { language: nextLanguage });
+    setLang(nextLanguage);
+  }, []);
+
   const handleChipTap = useCallback((id: ScenarioId) => {
     if (startInProgress.current || convStart.current !== null) return;
     startInProgress.current = true;
@@ -320,7 +347,7 @@ export function App() {
       onTalkStart={handleTalkStart}
       onTalkEnd={handleTalkEnd}
       onChipTap={handleChipTap}
-      onLangChange={setLang}
+      onLangChange={handleLanguageChange}
     />
   );
 }

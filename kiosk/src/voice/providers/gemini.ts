@@ -7,7 +7,7 @@ import type { Session } from '@google/genai';
 import type { Language, VoiceProvider, VoiceProviderConfig, VoiceProviderEvents } from './VoiceProvider';
 import { AudioCapture } from '../../audio/AudioCapture';
 import { AudioPlayback } from '../../audio/AudioPlayback';
-import { activeLanguageInstruction, detectLanguage } from '../languageDetection';
+import { activeLanguageInstruction, detectLanguage, lockedLanguageInstruction } from '../languageDetection';
 
 const MODEL = import.meta.env.VITE_GEMINI_MODEL ?? 'gemini-3.1-flash-live-preview';
 const VOICE = 'Puck'; // playful, warm — fits Apa's personality
@@ -39,6 +39,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
   private pendingAudioChunks: ArrayBuffer[] = [];
   private responseComplete = false;
   private language: Language = 'es';
+  private languageLock: Language | null = null;
   private heardUserTranscript = false;
   private sawResponseAudio = false;
 
@@ -52,6 +53,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.pendingAudioChunks = [];
     this.responseComplete = false;
     this.language = config.initialLanguage;
+    this.languageLock = config.languageLock;
     this.heardUserTranscript = false;
     this.sawResponseAudio = false;
 
@@ -76,7 +78,9 @@ export class GeminiVoiceProvider implements VoiceProvider {
         config: {
           responseModalities: [Modality.AUDIO],
           systemInstruction: {
-            parts: [{ text: `${config.systemPrompt}\n\n${activeLanguageInstruction(config.initialLanguage)}` }],
+            parts: [{
+              text: `${config.systemPrompt}\n\n${config.languageLock ? lockedLanguageInstruction(config.languageLock) : activeLanguageInstruction(config.initialLanguage)}`,
+            }],
           },
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } },
@@ -179,7 +183,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
     if (sc.inputTranscription?.text) {
       this.heardUserTranscript = true;
       ev.onTranscript({ role: 'user', text: sc.inputTranscription.text });
-      this.language = detectLanguage(sc.inputTranscription.text, this.language);
+      this.language = this.languageLock ?? detectLanguage(sc.inputTranscription.text, this.language);
       ev.onLanguageDetected(this.language);
       ev.onDebug?.('input_transcript', {
         length: sc.inputTranscription.text.trim().length,

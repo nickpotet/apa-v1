@@ -8,6 +8,8 @@ export interface VoiceProviderConfig {
   maxConversationSeconds: number;
   /** Initial UI language; the engine may switch after detecting user speech. */
   initialLanguage: Language;
+  /** When set, the visitor explicitly chose this language in the UI. */
+  languageLock: Language | null;
   /** Fully resolved system prompt assembled from /config/*. */
   systemPrompt: string;
   /** Token for the voice API. For Gemini: the actual API key (local kiosk, no cloud exposure).
