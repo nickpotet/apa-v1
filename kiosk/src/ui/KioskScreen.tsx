@@ -6,7 +6,6 @@ import { ApaDriver } from '../rive/ApaDriver';
 import { TalkButton } from './TalkButton';
 import { ScenarioChips } from './ScenarioChips';
 import type { ScenarioId } from './ScenarioChips';
-import { QrBlock } from './QrBlock';
 
 interface Props {
   lang: Language;
@@ -19,11 +18,11 @@ interface Props {
 
 const LANGS: Language[] = ['es', 'en', 'ru', 'ca'];
 
-const LANGUAGE_META: Record<Language, { flag: string; name: string; hint: string; striped?: boolean }> = {
-  es: { flag: '🇪🇸', name: 'Español', hint: 'Habla conmigo' },
-  en: { flag: '🇬🇧', name: 'English', hint: 'Talk to me' },
-  ru: { flag: '🇷🇺', name: 'Русский', hint: 'Поговори со мной' },
-  ca: { flag: '', name: 'Català', hint: 'Parla amb mi', striped: true },
+const LANGUAGE_META: Record<Language, { flag: string; striped?: boolean }> = {
+  es: { flag: '🇪🇸' },
+  en: { flag: '🇬🇧' },
+  ru: { flag: '🇷🇺' },
+  ca: { flag: '', striped: true },
 };
 
 function LanguageFlag({ language }: { language: Language }) {
@@ -68,35 +67,29 @@ export function KioskScreen({
         <VenueStatusBadge lang={lang} />
       </header>
 
-      <div className="shrink-0 px-4 pb-3">
-        <div className="mx-auto grid max-w-2xl grid-cols-2 gap-2 rounded-[28px] border border-white/10 bg-white/6 p-2 backdrop-blur-sm">
+      <div className="shrink-0 px-5 pb-2">
+        <div className="mx-auto flex max-w-sm items-center justify-center gap-2 rounded-full border border-white/10 bg-white/7 px-2 py-2 backdrop-blur-sm">
         {LANGS.map((l) => (
           <button
             key={l}
             onClick={() => onLangChange(l)}
-            className={`flex min-h-16 items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-all ${
+            className={`flex h-14 w-14 items-center justify-center rounded-full border transition-all ${
               l === lang
                 ? 'border-sky-300/80 bg-sky-400/18 text-white shadow-[0_0_30px_rgba(56,189,248,0.18)]'
                 : 'border-white/6 bg-white/[0.03] text-white/78 hover:border-white/12 hover:bg-white/[0.06]'
             }`}
           >
             <LanguageFlag language={l} />
-            <span className="min-w-0">
-              <span className="block text-base font-semibold leading-tight">{LANGUAGE_META[l].name}</span>
-              <span className={`block text-[11px] leading-tight ${l === lang ? 'text-sky-100/90' : 'text-white/45'}`}>
-                {LANGUAGE_META[l].hint}
-              </span>
-            </span>
           </button>
         ))}
         </div>
       </div>
 
-      <div className="min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 items-end pt-1">
         <ApaDriver kioskState={kioskState} lang={lang} />
       </div>
 
-      <div className="shrink-0 py-4">
+      <div className="shrink-0 py-5">
         <TalkButton
           lang={lang}
           kioskState={kioskState}
@@ -105,12 +98,8 @@ export function KioskScreen({
         />
       </div>
 
-      <div className="shrink-0 pb-4">
+      <div className="shrink-0 pb-6">
         <ScenarioChips lang={lang} disabled={isBusy} onChipTap={onChipTap} />
-      </div>
-
-      <div className="shrink-0 pb-5">
-        <QrBlock lang={lang} />
       </div>
 
     </div>
