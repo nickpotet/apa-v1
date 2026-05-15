@@ -32,11 +32,13 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
   private nearTimeout: ReturnType<typeof setTimeout> | null = null;
   private responseTimeout: ReturnType<typeof setTimeout> | null = null;
   private stopped = true;
+  private responseComplete = false;
 
   async start(config: VoiceProviderConfig, events: VoiceProviderEvents): Promise<void> {
     await this.stopActiveSession();
     this.stopped = false;
     this.events  = events;
+    this.responseComplete = false;
 
     try {
       await this.capture.start((pcm16) => {
@@ -121,7 +123,14 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
       case 'response.audio.delta': {
         const delta = msg.delta as string;
         this.clearResponseWatchdog();
-        this.playback.enqueue(delta, () => ev.onSpeakingStart(), () => ev.onSpeakingEnd());
+        this.playback.enqueue(
+          delta,
+          () => ev.onSpeakingStart(),
+          () => {
+            ev.onSpeakingEnd();
+            this.maybeCompleteResponse();
+          },
+        );
         break;
       }
       case 'response.audio_transcript.delta':
@@ -140,12 +149,14 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
         break;
       }
       case 'response.done':
+        this.responseComplete = true;
         this.clearResponseWatchdog();
-        if (!this.playback.isPlaying) ev.onSpeakingEnd();
+        this.maybeCompleteResponse();
         break;
       case 'input_audio_buffer.speech_started':
         this.playback.interrupt();
         ev.onSpeakingEnd();
+        this.maybeCompleteResponse();
         break;
       case 'error': {
         const err = msg.error as { message?: string };
@@ -170,15 +181,17 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
     this.events = null;
   }
 
-  private close(reason: 'user' | 'timeout' | 'error' | 'network', closeSocket = true): void {
+  private close(reason: 'user' | 'timeout' | 'error' | 'network' | 'complete', closeSocket = true): void {
     if (this.stopped) return;
     this.stopped = true;
     this.clearTimers();
     this.capture.stop();
+    this.playback.interrupt();
     if (closeSocket) {
       try { this.ws?.close(1000); } catch {}
     }
     this.ws = null;
+    this.responseComplete = false;
     this.events?.onEnd(reason);
     this.events = null;
   }
@@ -191,8 +204,14 @@ export class OpenAIRealtimeProvider implements VoiceProvider {
     this.playback.interrupt();
     try { this.ws?.close(1000); } catch {}
     this.ws = null;
+    this.responseComplete = false;
     this.events?.onError(err);
     this.events = null;
+  }
+
+  private maybeCompleteResponse(): void {
+    if (!this.responseComplete || this.playback.isPlaying) return;
+    this.close('complete');
   }
 
   private startResponseWatchdog(): void {

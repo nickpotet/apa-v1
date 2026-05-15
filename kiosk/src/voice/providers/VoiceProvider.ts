@@ -26,7 +26,7 @@ export interface VoiceProviderEvents {
   /** Fired ~10 s before the hard cap so the UI can show a wrap-up cue. */
   onTimeoutNearing: () => void;
   onError: (err: Error) => void;
-  onEnd: (reason: 'user' | 'timeout' | 'error' | 'network') => void;
+  onEnd: (reason: 'user' | 'timeout' | 'error' | 'network' | 'complete') => void;
 }
 
 export interface VoiceProvider {

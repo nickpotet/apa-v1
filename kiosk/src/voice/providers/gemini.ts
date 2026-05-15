@@ -37,6 +37,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
   private turnEnded = false;
   private activityOpen = false;
   private pendingAudioChunks: ArrayBuffer[] = [];
+  private responseComplete = false;
 
   async start(config: VoiceProviderConfig, events: VoiceProviderEvents): Promise<void> {
     await this.stopActiveSession();
@@ -46,6 +47,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.turnEnded = false;
     this.activityOpen = false;
     this.pendingAudioChunks = [];
+    this.responseComplete = false;
 
     try {
       await this.capture.start((pcm16) => {
@@ -134,6 +136,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
     if (sc.interrupted) {
       this.playback.interrupt();
       ev.onSpeakingEnd();
+      this.maybeCompleteResponse();
     }
 
     const parts = sc.modelTurn?.parts ?? [];
@@ -143,7 +146,10 @@ export class GeminiVoiceProvider implements VoiceProvider {
         this.playback.enqueue(
           part.inlineData.data,
           () => ev.onSpeakingStart(),
-          () => { if (!sc.interrupted) ev.onSpeakingEnd(); },
+          () => {
+            if (!sc.interrupted) ev.onSpeakingEnd();
+            this.maybeCompleteResponse();
+          },
         );
       }
       if (part.text) ev.onTranscript({ role: 'ap', text: part.text });
@@ -160,8 +166,9 @@ export class GeminiVoiceProvider implements VoiceProvider {
     }
 
     if (sc.turnComplete) {
+      this.responseComplete = true;
       this.clearResponseWatchdog();
-      if (!this.playback.isPlaying) ev.onSpeakingEnd();
+      this.maybeCompleteResponse();
     }
   }
 
@@ -182,17 +189,19 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.pendingAudioChunks = [];
   }
 
-  private close(reason: 'user' | 'timeout' | 'error' | 'network', closeSocket = true): void {
+  private close(reason: 'user' | 'timeout' | 'error' | 'network' | 'complete', closeSocket = true): void {
     if (this.stopped) return;
     this.stopped = true;
     this.clearTimers();
     this.capture.stop();
+    this.playback.interrupt();
     if (closeSocket) {
       try { this.session?.close(); } catch {}
     }
     this.session = null;
     this.activityOpen = false;
     this.pendingAudioChunks = [];
+    this.responseComplete = false;
     this.events?.onEnd(reason);
     this.events = null;
   }
@@ -207,8 +216,14 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.session = null;
     this.activityOpen = false;
     this.pendingAudioChunks = [];
+    this.responseComplete = false;
     this.events?.onError(err);
     this.events = null;
+  }
+
+  private maybeCompleteResponse(): void {
+    if (!this.responseComplete || this.playback.isPlaying) return;
+    this.close('complete');
   }
 
   private queueAudioChunk(pcm16: ArrayBuffer): void {
