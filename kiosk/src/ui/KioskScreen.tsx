@@ -18,33 +18,62 @@ interface Props {
 
 const LANGS: Language[] = ['es', 'en', 'ru', 'ca'];
 
-const LANGUAGE_META: Record<Language, { flag: string; striped?: boolean }> = {
-  es: { flag: '🇪🇸' },
-  en: { flag: '🇬🇧' },
-  ru: { flag: '🇷🇺' },
-  ca: { flag: '', striped: true },
+const LANGUAGE_META: Record<Language, { pattern: 'spain' | 'uk' | 'russia' | 'catalonia' }> = {
+  es: { pattern: 'spain' },
+  en: { pattern: 'uk' },
+  ru: { pattern: 'russia' },
+  ca: { pattern: 'catalonia' },
 };
 
 function LanguageFlag({ language }: { language: Language }) {
   const meta = LANGUAGE_META[language];
+  const baseClass = 'relative inline-flex h-8 w-8 shrink-0 overflow-hidden rounded-full border border-white/15 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]';
 
-  if (meta.striped) {
+  if (meta.pattern === 'spain') {
     return (
-      <span
-        className="inline-grid h-8 w-8 shrink-0 overflow-hidden rounded-full border border-white/15 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]"
-        aria-hidden="true"
-      >
-        <span className="bg-[#f4c534]" />
-        <span className="bg-[#cf2d36]" />
-        <span className="bg-[#f4c534]" />
-        <span className="bg-[#cf2d36]" />
-        <span className="bg-[#f4c534]" />
-        <span className="bg-[#cf2d36]" />
+      <span className={`${baseClass} flex-col`} aria-hidden="true">
+        <span className="h-[26%] bg-[#b91c1c]" />
+        <span className="relative flex-1 bg-[#f3c63d]">
+          <span className="absolute left-[24%] top-1/2 h-2.5 w-2 -translate-y-1/2 rounded-[2px] bg-[#9f1239]" />
+        </span>
+        <span className="h-[26%] bg-[#b91c1c]" />
       </span>
     );
   }
 
-  return <span className="text-2xl leading-none" aria-hidden="true">{meta.flag}</span>;
+  if (meta.pattern === 'uk') {
+    return (
+      <span className={`${baseClass} bg-[#1d3f8f]`} aria-hidden="true">
+        <span className="absolute inset-0 bg-[linear-gradient(35deg,transparent_41%,#fff_41%,#fff_49%,transparent_49%,transparent_51%,#fff_51%,#fff_59%,transparent_59%),linear-gradient(-35deg,transparent_41%,#fff_41%,#fff_49%,transparent_49%,transparent_51%,#fff_51%,#fff_59%,transparent_59%)]" />
+        <span className="absolute inset-0 bg-[linear-gradient(35deg,transparent_45%,#c81e1e_45%,#c81e1e_50%,transparent_50%,transparent_54%,#c81e1e_54%,#c81e1e_59%,transparent_59%),linear-gradient(-35deg,transparent_45%,#c81e1e_45%,#c81e1e_50%,transparent_50%,transparent_54%,#c81e1e_54%,#c81e1e_59%,transparent_59%)]" />
+        <span className="absolute left-1/2 top-0 h-full w-[28%] -translate-x-1/2 bg-white" />
+        <span className="absolute left-0 top-1/2 h-[28%] w-full -translate-y-1/2 bg-white" />
+        <span className="absolute left-1/2 top-0 h-full w-[14%] -translate-x-1/2 bg-[#c81e1e]" />
+        <span className="absolute left-0 top-1/2 h-[14%] w-full -translate-y-1/2 bg-[#c81e1e]" />
+      </span>
+    );
+  }
+
+  if (meta.pattern === 'russia') {
+    return (
+      <span className={`${baseClass} flex-col`} aria-hidden="true">
+        <span className="h-1/3 bg-[#f8fafc]" />
+        <span className="h-1/3 bg-[#2457c5]" />
+        <span className="h-1/3 bg-[#c53333]" />
+      </span>
+    );
+  }
+
+  return (
+    <span className={`${baseClass} flex-col`} aria-hidden="true">
+      <span className="flex-1 bg-[#f4c534]" />
+      <span className="flex-1 bg-[#cf2d36]" />
+      <span className="flex-1 bg-[#f4c534]" />
+      <span className="flex-1 bg-[#cf2d36]" />
+      <span className="flex-1 bg-[#f4c534]" />
+      <span className="flex-1 bg-[#cf2d36]" />
+    </span>
+  );
 }
 
 export function KioskScreen({
