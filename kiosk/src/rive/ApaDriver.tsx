@@ -53,7 +53,7 @@ export function ApaDriver({ kioskState, lang }: Props) {
 
   return (
     <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden">
-      <div className="absolute inset-x-8 bottom-5 h-16 rounded-full bg-sky-300/10 blur-2xl" />
+      <div className="apa-ground-shadow absolute bottom-6 h-10 w-44 rounded-full bg-sky-300/10" />
       <div
         className={[
           'apa-stage relative flex aspect-square w-[min(76vw,28rem)] items-center justify-center rounded-full bg-white/[0.045] ring-2 transition-all duration-500',
@@ -74,14 +74,11 @@ export function ApaDriver({ kioskState, lang }: Props) {
                 <stop offset="58%" stopColor="#111827" />
                 <stop offset="100%" stopColor="#07111f" />
               </linearGradient>
-              <filter id="apaSoftShadow" x="-30%" y="-30%" width="160%" height="170%">
-                <feDropShadow dx="0" dy="18" stdDeviation="16" floodColor="#020617" floodOpacity="0.55" />
-              </filter>
             </defs>
 
             <ellipse className="apa-shadow" cx="120" cy="251" rx="62" ry="13" fill="#020617" opacity="0.42" />
 
-            <g className="apa-body" filter="url(#apaSoftShadow)">
+            <g className="apa-body">
               <path d="M53 147c0-70 29-116 67-116s67 46 67 116c0 69-28 111-67 111s-67-42-67-111Z" fill="url(#apaBody)" />
               <path d="M73 157c0-48 20-82 47-82s47 34 47 82c0 50-20 83-47 83s-47-33-47-83Z" fill="url(#apaBelly)" />
               <path d="M72 86c8-34 26-55 48-55s40 21 48 55c-12-13-29-21-48-21s-36 8-48 21Z" fill="#334155" opacity="0.78" />

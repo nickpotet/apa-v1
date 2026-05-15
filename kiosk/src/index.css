@@ -5,16 +5,14 @@
 }
 
 .apa-stage {
+  contain: layout paint;
   transform: translateZ(0);
-}
-
-.apa-float {
-  animation: apa-float 5.8s ease-in-out infinite;
 }
 
 .apa-body {
   transform-origin: 120px 150px;
-  animation: apa-breathe 3.8s ease-in-out infinite;
+  animation: apa-breathe 5.8s ease-in-out infinite;
+  will-change: transform;
 }
 
 .apa-eye {
@@ -28,12 +26,10 @@
 
 .apa-flipper-left {
   transform-origin: 74% 21%;
-  animation: apa-left-flipper-idle 6.4s ease-in-out infinite;
 }
 
 .apa-flipper-right {
   transform-origin: 26% 21%;
-  animation: apa-right-flipper-idle 6.4s ease-in-out infinite;
 }
 
 .apa-beak-lower {
@@ -48,6 +44,10 @@
 
 .apa-sleep {
   opacity: 0;
+}
+
+.apa-ground-shadow {
+  box-shadow: 0 0 30px rgba(125, 211, 252, 0.12);
 }
 
 .apa--listening .apa-body {
@@ -118,11 +118,6 @@
   animation: apa-error-shake 0.42s ease-in-out 2;
 }
 
-@keyframes apa-float {
-  0%, 100% { transform: translateY(0) rotate(-0.6deg); }
-  50% { transform: translateY(-10px) rotate(0.6deg); }
-}
-
 @keyframes apa-breathe {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.018, 0.992); }
@@ -131,16 +126,6 @@
 @keyframes apa-blink {
   0%, 92%, 100% { transform: scaleY(1); }
   95% { transform: scaleY(0.12); }
-}
-
-@keyframes apa-left-flipper-idle {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(-5deg); }
-}
-
-@keyframes apa-right-flipper-idle {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(5deg); }
 }
 
 @keyframes apa-listen {

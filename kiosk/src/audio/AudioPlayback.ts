@@ -3,17 +3,14 @@
 // and are queued so playback is gapless.
 
 export class AudioPlayback {
-  private ctx: AudioContext;
+  private ctx: AudioContext | null = null;
   private nextAt = 0;
   private activeSources = 0;
   private doneTimer: ReturnType<typeof setTimeout> | null = null;
-
-  constructor() {
-    this.ctx = new AudioContext({ sampleRate: 24000 });
-  }
+  private generation = 0;
 
   get isPlaying(): boolean {
-    return this.activeSources > 0 || this.nextAt > this.ctx.currentTime;
+    return this.ctx !== null && (this.activeSources > 0 || this.nextAt > this.ctx.currentTime);
   }
 
   /** Queue one base64-encoded PCM16 chunk (24 kHz mono). Returns promise that resolves when done playing. */
@@ -21,8 +18,10 @@ export class AudioPlayback {
     clearTimeout(this.doneTimer ?? undefined);
     this.doneTimer = null;
 
+    const ctx = this.ensureContext();
+
     // Resume if suspended by browser autoplay policy (requires prior user gesture).
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (ctx.state === 'suspended') ctx.resume();
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
@@ -30,26 +29,31 @@ export class AudioPlayback {
     const float32 = new Float32Array(int16.length);
     for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 0x7fff;
 
-    const buf = this.ctx.createBuffer(1, float32.length, 24000);
+    const buf = ctx.createBuffer(1, float32.length, 24000);
     buf.copyToChannel(float32, 0);
 
-    const src = this.ctx.createBufferSource();
+    const src = ctx.createBufferSource();
     src.buffer = buf;
-    src.connect(this.ctx.destination);
+    src.connect(ctx.destination);
 
-    const startAt = Math.max(this.ctx.currentTime, this.nextAt);
+    const startAt = Math.max(ctx.currentTime, this.nextAt);
     this.nextAt = startAt + buf.duration;
     src.start(startAt);
 
     if (this.activeSources === 0) onPlaying();
     this.activeSources++;
+    const sourceGeneration = this.generation;
 
     src.onended = () => {
+      if (sourceGeneration !== this.generation) return;
       this.activeSources--;
       if (this.activeSources === 0) {
         this.doneTimer = setTimeout(() => {
           this.doneTimer = null;
-          if (this.activeSources === 0) onDone();
+          if (this.activeSources === 0) {
+            this.closeContext();
+            onDone();
+          }
         }, 250);
       }
     };
@@ -59,10 +63,19 @@ export class AudioPlayback {
   interrupt(): void {
     clearTimeout(this.doneTimer ?? undefined);
     this.doneTimer = null;
-    this.ctx.close().catch(() => {});
-    this.ctx = new AudioContext({ sampleRate: 24000 });
-    this.ctx.resume();
+    this.generation++;
+    this.closeContext();
     this.nextAt = 0;
     this.activeSources = 0;
+  }
+
+  private ensureContext(): AudioContext {
+    this.ctx ??= new AudioContext({ sampleRate: 24000 });
+    return this.ctx;
+  }
+
+  private closeContext(): void {
+    this.ctx?.close().catch(() => {});
+    this.ctx = null;
   }
 }
