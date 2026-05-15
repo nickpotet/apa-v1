@@ -149,7 +149,7 @@ export function App() {
         ? [
             '## Recent local kiosk context',
             'Use this only to preserve continuity across push-to-talk turns.',
-            'Keep the active kiosk language if this context conflicts with the current visitor speech.',
+            'The current visitor speech always wins over stale context when the languages conflict.',
             ...transcriptRef.current.map((entry) => `${entry.role === 'user' ? 'Visitor' : 'Apa'}: ${entry.text}`),
           ].join('\n')
         : '',
