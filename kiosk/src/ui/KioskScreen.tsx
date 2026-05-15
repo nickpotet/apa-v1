@@ -19,12 +19,34 @@ interface Props {
 
 const LANGS: Language[] = ['es', 'en', 'ru', 'ca'];
 
-const LANGUAGE_META: Record<Language, { flag: string; name: string; hint: string }> = {
+const LANGUAGE_META: Record<Language, { flag: string; name: string; hint: string; striped?: boolean }> = {
   es: { flag: '🇪🇸', name: 'Español', hint: 'Habla conmigo' },
   en: { flag: '🇬🇧', name: 'English', hint: 'Talk to me' },
   ru: { flag: '🇷🇺', name: 'Русский', hint: 'Поговори со мной' },
-  ca: { flag: '🟨🟥', name: 'Català', hint: 'Parla amb mi' },
+  ca: { flag: '', name: 'Català', hint: 'Parla amb mi', striped: true },
 };
+
+function LanguageFlag({ language }: { language: Language }) {
+  const meta = LANGUAGE_META[language];
+
+  if (meta.striped) {
+    return (
+      <span
+        className="inline-grid h-8 w-8 shrink-0 overflow-hidden rounded-full border border-white/15 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]"
+        aria-hidden="true"
+      >
+        <span className="bg-[#f4c534]" />
+        <span className="bg-[#cf2d36]" />
+        <span className="bg-[#f4c534]" />
+        <span className="bg-[#cf2d36]" />
+        <span className="bg-[#f4c534]" />
+        <span className="bg-[#cf2d36]" />
+      </span>
+    );
+  }
+
+  return <span className="text-2xl leading-none" aria-hidden="true">{meta.flag}</span>;
+}
 
 export function KioskScreen({
   lang,
@@ -58,7 +80,7 @@ export function KioskScreen({
                 : 'border-white/6 bg-white/[0.03] text-white/78 hover:border-white/12 hover:bg-white/[0.06]'
             }`}
           >
-            <span className="text-2xl leading-none" aria-hidden="true">{LANGUAGE_META[l].flag}</span>
+            <LanguageFlag language={l} />
             <span className="min-w-0">
               <span className="block text-base font-semibold leading-tight">{LANGUAGE_META[l].name}</span>
               <span className={`block text-[11px] leading-tight ${l === lang ? 'text-sky-100/90' : 'text-white/45'}`}>
