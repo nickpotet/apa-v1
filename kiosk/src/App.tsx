@@ -18,8 +18,7 @@ const DEMO_PROMPT = 'GitHub Pages demo mode. Static UI test only; realtime voice
 const input    = new ArcadeButtonMic();
 const attract  = new AttractLoop();
 const chipPlayer = new ChipResponsePlayer();
-const SESSION_CONTEXT_TTL_MS = 120_000;
-const MAX_CONTEXT_LINES = 8;
+const SESSION_CONTEXT_TTL_MS = 30_000;
 
 type TranscriptEntry = {
   role: 'user' | 'ap';
@@ -37,10 +36,10 @@ export function App() {
   const startInProgress = useRef(false);
   const endRequested = useRef(false);
   const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contextTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nextVoiceAccess = useRef<VoiceAccess | null>(null);
   const voiceAccessRequest = useRef<Promise<VoiceAccess | null> | null>(null);
   const transcriptRef = useRef<TranscriptEntry[]>([]);
-  const lastInteractionAt = useRef(0);
   langRef.current = lang;
 
   const resetConversation = useCallback((shouldLog: boolean) => {
@@ -118,22 +117,28 @@ export function App() {
     return () => clearTimeout(errorTimer.current ?? undefined);
   }, []);
 
-  const resetStaleContext = useCallback(() => {
-    if (Date.now() - lastInteractionAt.current > SESSION_CONTEXT_TTL_MS) {
+  useEffect(() => {
+    return () => clearTimeout(contextTimer.current ?? undefined);
+  }, []);
+
+  const armContextExpiry = useCallback(() => {
+    clearTimeout(contextTimer.current ?? undefined);
+    contextTimer.current = setTimeout(() => {
+      contextTimer.current = null;
       transcriptRef.current = [];
-    }
+    }, SESSION_CONTEXT_TTL_MS);
   }, []);
 
   const rememberTranscript = useCallback((entry: TranscriptEntry) => {
     const text = entry.text.trim();
     if (!text) return;
 
-    lastInteractionAt.current = Date.now();
     transcriptRef.current = [
       ...transcriptRef.current,
       { ...entry, text },
-    ].slice(-MAX_CONTEXT_LINES);
-  }, []);
+    ];
+    armContextExpiry();
+  }, [armContextExpiry]);
 
   const providerConfig = useCallback((sessionToken: string) => ({
     maxConversationSeconds: 75,
@@ -191,7 +196,7 @@ export function App() {
     if (!systemPrompt) return;
     if (startInProgress.current || convStart.current !== null) return;
 
-    resetStaleContext();
+    clearTimeout(contextTimer.current ?? undefined);
     startInProgress.current = true;
     endRequested.current = false;
 
