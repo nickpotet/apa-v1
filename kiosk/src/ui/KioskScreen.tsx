@@ -19,6 +19,13 @@ interface Props {
 
 const LANGS: Language[] = ['es', 'en', 'ru', 'ca'];
 
+const LANGUAGE_META: Record<Language, { flag: string; name: string; hint: string }> = {
+  es: { flag: '🇪🇸', name: 'Español', hint: 'Habla conmigo' },
+  en: { flag: '🇬🇧', name: 'English', hint: 'Talk to me' },
+  ru: { flag: '🇷🇺', name: 'Русский', hint: 'Поговори со мной' },
+  ca: { flag: '🟨🟥', name: 'Català', hint: 'Parla amb mi' },
+};
+
 export function KioskScreen({
   lang,
   kioskState,
@@ -32,7 +39,6 @@ export function KioskScreen({
   return (
     <div className="flex h-full w-full flex-col bg-[#0b0f1a] text-white">
 
-      {/* ── Header ── */}
       <header className="flex shrink-0 items-center justify-between px-5 pt-4 pb-2">
         <span className="text-xs font-semibold tracking-widest text-white/30 uppercase">
           {VENUE_NAME}
@@ -40,27 +46,34 @@ export function KioskScreen({
         <VenueStatusBadge lang={lang} />
       </header>
 
-      {/* ── Language switcher ── */}
-      <div className="flex shrink-0 justify-center gap-2 pb-2">
+      <div className="shrink-0 px-4 pb-3">
+        <div className="mx-auto grid max-w-2xl grid-cols-2 gap-2 rounded-[28px] border border-white/10 bg-white/6 p-2 backdrop-blur-sm">
         {LANGS.map((l) => (
           <button
             key={l}
             onClick={() => onLangChange(l)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              l === lang ? 'bg-sky-500 text-white' : 'text-white/30 hover:text-white/60'
+            className={`flex min-h-16 items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-all ${
+              l === lang
+                ? 'border-sky-300/80 bg-sky-400/18 text-white shadow-[0_0_30px_rgba(56,189,248,0.18)]'
+                : 'border-white/6 bg-white/[0.03] text-white/78 hover:border-white/12 hover:bg-white/[0.06]'
             }`}
           >
-            {l.toUpperCase()}
+            <span className="text-2xl leading-none" aria-hidden="true">{LANGUAGE_META[l].flag}</span>
+            <span className="min-w-0">
+              <span className="block text-base font-semibold leading-tight">{LANGUAGE_META[l].name}</span>
+              <span className={`block text-[11px] leading-tight ${l === lang ? 'text-sky-100/90' : 'text-white/45'}`}>
+                {LANGUAGE_META[l].hint}
+              </span>
+            </span>
           </button>
         ))}
+        </div>
       </div>
 
-      {/* ── Penguin canvas ── */}
       <div className="min-h-0 flex-1">
         <ApaDriver kioskState={kioskState} lang={lang} />
       </div>
 
-      {/* ── Talk button ── */}
       <div className="shrink-0 py-4">
         <TalkButton
           lang={lang}
@@ -70,12 +83,10 @@ export function KioskScreen({
         />
       </div>
 
-      {/* ── Scenario chips ── */}
       <div className="shrink-0 pb-4">
         <ScenarioChips lang={lang} disabled={isBusy} onChipTap={onChipTap} />
       </div>
 
-      {/* ── QR block ── */}
       <div className="shrink-0 pb-5">
         <QrBlock lang={lang} />
       </div>
