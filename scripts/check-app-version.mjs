@@ -10,10 +10,8 @@ if (!/^\d+\.\d+\.\d+$/.test(expected)) throw new Error(`Invalid app version: ${e
 for (const path of [
   'package.json',
   'kiosk/package.json',
-  'server/package.json',
   'package-lock.json',
   'kiosk/package-lock.json',
-  'server/package-lock.json',
 ]) {
   const value = readJson(path);
   if (value.version !== expected) throw new Error(`${path} has version ${value.version}; expected ${expected}`);

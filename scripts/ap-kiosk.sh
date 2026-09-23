@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
-# Launches Chrome in kiosk mode pointing at the Ap server.
+# Launches Chromium in kiosk mode on the production site.
 # Called by ap-kiosk.service — do not run directly.
+# (Only for a Linux mini-PC build. The live venue kiosk is an Android panel
+#  running the same URL in its WebView; it self-updates after each deploy.)
 set -euo pipefail
-
-# Wait until the server is up (max 30s)
-for i in $(seq 1 30); do
-  curl -sf http://127.0.0.1:8787/api/health > /dev/null && break
-  sleep 1
-done
 
 exec /usr/bin/chromium-browser \
   --kiosk \
@@ -17,5 +13,5 @@ exec /usr/bin/chromium-browser \
   --disable-restore-session-state \
   --autoplay-policy=no-user-gesture-required \
   --disable-features=TranslateUI \
-  --user-data-dir=/tmp/ap-kiosk \
-  http://127.0.0.1:8787
+  --user-data-dir="${HOME}/.config/ap-kiosk" \
+  https://apa-v1.pages.dev/

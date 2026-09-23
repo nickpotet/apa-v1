@@ -1,129 +1,18 @@
 {
-  "enabled": ["es", "en", "ru", "ca", "fr", "de", "uk", "sr", "it", "pl"],
+  "enabled": [
+    "es",
+    "en",
+    "ru",
+    "ca",
+    "fr",
+    "de",
+    "uk",
+    "sr",
+    "it",
+    "pl"
+  ],
   "default": "es",
   "detection": {
     "strategy": "model"
-  },
-  "ui": {
-    "es": {
-      "talkButton": "Habla con Apa",
-      "talkButtonHeld": "Suéltalo para hablar",
-      "listening": "Escuchando…",
-      "thinking": "Pensando…",
-      "speaking": "Apa habla…",
-      "offlineFallback": "Estoy sin voz un momento — entra a verme dentro.",
-      "scanQr": "Escanea para más",
-      "statusOpen": "Abierto ahora",
-      "statusLastCall": "Última entrada — 15 min",
-      "chips": ["👨‍👩‍👧 Somos familia", "❤️ En pareja", "📸 Quiero fotos", "🎁 Busco regalo", "💶 ¿Cuánto cuesta?", "🐧 ¿Qué es esto?"]
-    },
-    "en": {
-      "talkButton": "Talk to Apa",
-      "talkButtonHeld": "Release to speak",
-      "listening": "Listening…",
-      "thinking": "Thinking…",
-      "speaking": "Apa is speaking…",
-      "offlineFallback": "Lost my voice for a sec — come find me inside.",
-      "scanQr": "Scan for more",
-      "statusOpen": "Open now",
-      "statusLastCall": "Last entry — 15 min",
-      "chips": ["👨‍👩‍👧 Family visit", "❤️ For a couple", "📸 Photography", "🎁 Looking for gift", "💶 How much?", "🐧 What is this?"]
-    },
-    "ru": {
-      "talkButton": "Поговори с Апой",
-      "talkButtonHeld": "Отпусти, чтобы говорить",
-      "listening": "Слушаю…",
-      "thinking": "Думаю…",
-      "speaking": "Апа говорит…",
-      "offlineFallback": "Я ненадолго без голоса — заходи внутрь.",
-      "scanQr": "Сканируй для информации",
-      "statusOpen": "Открыто",
-      "statusLastCall": "Последний вход — 15 мин",
-      "chips": ["👨‍👩‍👧 Семья", "❤️ Пара", "📸 Хочу фото", "🎁 Ищу подарок", "💶 Сколько стоит?", "🐧 Что это?"]
-    },
-    "ca": {
-      "talkButton": "Parla amb l'Apa",
-      "talkButtonHeld": "Deixa anar per parlar",
-      "listening": "Escoltant…",
-      "thinking": "Pensant…",
-      "speaking": "L'Apa parla…",
-      "offlineFallback": "Sense veu un moment — entra a veure'm.",
-      "scanQr": "Escaneja per saber-ne més",
-      "statusOpen": "Obert ara",
-      "statusLastCall": "Última entrada — 15 min",
-      "chips": ["👨‍👩‍👧 Som família", "❤️ En parella", "📸 Vull fotos", "🎁 Busco regal", "💶 Quant costa?", "🐧 Què és això?"]
-    },
-    "fr": {
-      "talkButton": "Parle avec Apa",
-      "talkButtonHeld": "Relâche pour parler",
-      "listening": "J’écoute…",
-      "thinking": "Je réfléchis…",
-      "speaking": "Apa parle…",
-      "offlineFallback": "Je n’ai plus de voix un instant — viens me voir à l’intérieur.",
-      "scanQr": "Scanne pour en savoir plus",
-      "statusOpen": "Ouvert maintenant",
-      "statusLastCall": "Dernière entrée — 15 min",
-      "chips": ["👨‍👩‍👧 En famille", "❤️ En couple", "📸 Je veux des photos", "🎁 Je cherche un cadeau", "💶 Combien ça coûte ?", "🐧 C’est quoi ?"]
-    },
-    "de": {
-      "talkButton": "Sprich mit Apa",
-      "talkButtonHeld": "Loslassen zum Sprechen",
-      "listening": "Ich höre zu…",
-      "thinking": "Ich denke nach…",
-      "speaking": "Apa spricht…",
-      "offlineFallback": "Meine Stimme ist kurz weg — komm einfach herein.",
-      "scanQr": "Scannen für mehr Infos",
-      "statusOpen": "Jetzt geöffnet",
-      "statusLastCall": "Letzter Einlass – 15 Min.",
-      "chips": ["👨‍👩‍👧 Familie", "❤️ Als Paar", "📸 Fotos", "🎁 Geschenk gesucht", "💶 Wie viel kostet es?", "🐧 Was ist das?"]
-    },
-    "uk": {
-      "talkButton": "Поговори з Апою",
-      "talkButtonHeld": "Відпусти, щоб говорити",
-      "listening": "Слухаю…",
-      "thinking": "Думаю…",
-      "speaking": "Апа говорить…",
-      "offlineFallback": "Я ненадовго без голосу — заходь усередину.",
-      "scanQr": "Скануй, щоб дізнатися більше",
-      "statusOpen": "Зараз відкрито",
-      "statusLastCall": "Останній вхід – за 15 хв",
-      "chips": ["👨‍👩‍👧 Ми сім’я", "❤️ Для пари", "📸 Хочу фото", "🎁 Шукаю подарунок", "💶 Скільки коштує?", "🐧 Що це?"]
-    },
-    "sr": {
-      "talkButton": "Pričaj sa Apom",
-      "talkButtonHeld": "Pusti za razgovor",
-      "listening": "Slušam…",
-      "thinking": "Razmišljam…",
-      "speaking": "Apa govori…",
-      "offlineFallback": "Nakratko sam ostao bez glasa — uđi unutra.",
-      "scanQr": "Skeniraj za više informacija",
-      "statusOpen": "Sada otvoreno",
-      "statusLastCall": "Poslednji ulaz – 15 min",
-      "chips": ["👨‍👩‍👧 Porodica", "❤️ Za par", "📸 Želim fotografije", "🎁 Tražim poklon", "💶 Koliko košta?", "🐧 Šta je ovo?"]
-    },
-    "it": {
-      "talkButton": "Parla con Apa",
-      "talkButtonHeld": "Rilascia per parlare",
-      "listening": "Ti ascolto…",
-      "thinking": "Sto pensando…",
-      "speaking": "Apa parla…",
-      "offlineFallback": "Sono senza voce per un attimo — entra a trovarmi.",
-      "scanQr": "Scansiona per saperne di più",
-      "statusOpen": "Aperto ora",
-      "statusLastCall": "Ultimo ingresso – 15 min",
-      "chips": ["👨‍👩‍👧 In famiglia", "❤️ In coppia", "📸 Voglio fare foto", "🎁 Cerco un regalo", "💶 Quanto costa?", "🐧 Che cos’è?"]
-    },
-    "pl": {
-      "talkButton": "Porozmawiaj z Apą",
-      "talkButtonHeld": "Puść, aby mówić",
-      "listening": "Słucham…",
-      "thinking": "Myślę…",
-      "speaking": "Apa mówi…",
-      "offlineFallback": "Na chwilę straciłem głos — wejdź do środka.",
-      "scanQr": "Zeskanuj, aby dowiedzieć się więcej",
-      "statusOpen": "Teraz otwarte",
-      "statusLastCall": "Ostatnie wejście – 15 min",
-      "chips": ["👨‍👩‍👧 Rodzina", "❤️ Dla pary", "📸 Chcę zdjęcia", "🎁 Szukam prezentu", "💶 Ile to kosztuje?", "🐧 Co to jest?"]
-    }
   }
 }

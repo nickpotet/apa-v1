@@ -250,3 +250,31 @@ This file is the working memory for Apa voice fixes. Keep it factual: what chang
 - Added version output to admin conversation endpoints and local `voice_turns.jsonl` / `messages.jsonl` sync files.
 - Added the same field to local SQLite conversation and voice-turn records.
 - Added `npm run version:bump` and a project rule requiring one patch bump for every change batch before verification or deployment.
+
+## 2026-09-23 — Kiosk reliability: end-of-speech, setupComplete, self-update (1.0.9)
+
+Three weeks of venue logs after 1.0.8 (247 kiosk turns, Android 12 WebView panel): 199 completed (80%). Of the 48 failures, 46 had two identifiable causes.
+
+### Tap-to-talk turns that never end — 25 turns (10%)
+- On touch the talk button is tap-to-start / tap-to-stop. In all 25 `reason=timeout` turns no `button_up` / `activity_end` ever arrived: the visitor spoke once, never tapped again, and the session streamed until the 75 s cap.
+- Added `kiosk/src/audio/endOfSpeech.ts`: ends a toggle-mode turn after 1.2 s of quiet following ≥300 ms of speech, with a 15 s listening cap. A 300 ms warm-up learns the room's noise floor first, so steady street noise can never end a turn before the visitor speaks; missed detections fall back to the cap. Press-and-hold input is never auto-ended.
+- Limits tuned on logs: p50 utterance 2.9 s, p95 11.0 s; a 15 s cap would have shortened 2.3% of historical completed turns.
+- Wired into both providers. `GuidePipelineProvider` previously had no listening limit at all.
+- `scripts/test-end-of-speech.ts` replays recorded speech (clean, with a 0.8 s internal pause, a 9.4 s monologue, over street noise, at 20% level) and pure noise/silence: 7/7 pass.
+
+### `1007 Precondition check failed` — 21 turns (8.5%)
+- Every one closed 2–3 s in, right after `activityEnd`, independent of utterance length (completed turns exist with 2 audio chunks).
+- `ai.live.connect()` in `@google/genai` 2.2.0 resolves once it has *sent* setup — it does not wait for `setupComplete`. We sent `activityStart` + audio immediately, violating the protocol order.
+- `GeminiVoiceProvider` now waits for `setupComplete` (8 s timeout → connectivity fallback) before `activityStart`; mic audio keeps buffering meanwhile. New event `provider_setup_complete` logs the latency.
+- Status: leading hypothesis, not yet proven. Confirm by the disappearance of 1007 closes in post-1.0.9 logs.
+
+### Stale kiosk builds
+- The WebView never reloads: after the 1.0.8 deploy the kiosk served 1.0.6 for ~18 h.
+- The build now emits a tiny static `/api/version`; `kiosk/src/config/autoUpdate.ts` polls it every 5 min and reloads once the kiosk is idle (no turn, no touch for 60 s), with a loop guard. Kiosk mode only.
+
+### Cleanup
+- Removed the Express dev server (`/server`) and `ap-server.service`. `npm run dev` now runs the real Pages Functions via `wrangler pages dev`, so guide mode works locally too. Tests run through root `tsx`.
+- Removed the dead `capture-worklet.js` and its prefetch (capture uses ScriptProcessor since mid-2026).
+- Removed the unread `ui` block from `config/languages.json`; UI copy lives only in `kiosk/src/config/venueConfig.ts`.
+- Serbian flag now shows the lesser coat of arms (double-headed eagle, inverted wings, crown), checked against the official flag at badge size.
+- CLAUDE.md / AGENTS.md updated to the actual hardware and backend; they no longer claim a server-side daily $-cap, which does not exist.

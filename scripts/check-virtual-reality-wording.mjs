@@ -3,6 +3,11 @@ import { extname, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const forbidden = new RegExp(`\\b${'V'}${'R'}\\b`);
+// The prompt itself must name the abbreviation to forbid it ("Never say or write
+// \"VR\"") — explicit prohibitions are allowed; any other use on the line still fails.
+const prohibition = new RegExp(
+  `(never say or write "${'V'}${'R'}"|never use the abbreviation \\*\\*${'V'}${'R'}\\*\\*)`, 'gi');
+const usesAbbreviation = (text) => forbidden.test(text.replace(prohibition, ''));
 const files = [];
 
 function collect(relativePath) {
@@ -16,12 +21,11 @@ function collect(relativePath) {
 
 collect('config');
 collect('kiosk/src');
-collect('server/src');
 files.push('scripts/build-pages-config.mjs');
 
 const violations = files.flatMap((file) => {
   const lines = readFileSync(resolve(root, file), 'utf8').split('\n');
-  return lines.flatMap((line, index) => forbidden.test(line) ? [`${file}:${index + 1}`] : []);
+  return lines.flatMap((line, index) => usesAbbreviation(line) ? [`${file}:${index + 1}`] : []);
 });
 
 if (violations.length) {
@@ -33,7 +37,7 @@ if (process.argv.includes('--dist')) {
   if (!existsSync(configPath)) throw new Error('Built Pages config is missing');
   const built = JSON.parse(readFileSync(configPath, 'utf8'));
   for (const key of ['systemPrompt', 'guideSystemPrompt']) {
-    if (forbidden.test(built[key])) throw new Error(`${key} contains the forbidden abbreviation`);
+    if (usesAbbreviation(built[key])) throw new Error(`${key} contains the forbidden abbreviation`);
     if (!built[key].includes('## VIRTUAL REALITY WORDING')) {
       throw new Error(`${key} is missing the mandatory full-wording instruction`);
     }

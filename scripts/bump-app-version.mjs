@@ -6,12 +6,10 @@ const versionPath = resolve(root, 'config/app_version.json');
 const packagePaths = [
   resolve(root, 'package.json'),
   resolve(root, 'kiosk/package.json'),
-  resolve(root, 'server/package.json'),
 ];
 const lockPaths = [
   resolve(root, 'package-lock.json'),
   resolve(root, 'kiosk/package-lock.json'),
-  resolve(root, 'server/package-lock.json'),
 ];
 
 function readJson(path) {

@@ -2,12 +2,12 @@
 # Install: sudo cp scripts/ap-kiosk.service /etc/systemd/system/
 #          sudo systemctl enable ap-kiosk && sudo systemctl start ap-kiosk
 #
-# Requires ap-server.service to be running and X / Wayland display available.
+# Requires network access to apa-v1.pages.dev and an X / Wayland display.
 
 [Unit]
 Description=Ap Kiosk (Chrome fullscreen)
-After=ap-server.service graphical.target
-Requires=ap-server.service
+After=network-online.target graphical.target
+Wants=network-online.target
 
 [Service]
 Type=simple

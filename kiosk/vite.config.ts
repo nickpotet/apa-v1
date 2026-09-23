@@ -2,9 +2,9 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-// Vite config for the Ap kiosk frontend.
-// The kiosk runs under Chrome `--kiosk` against the local Express server on :8787.
-// API calls are proxied so the frontend can use relative URLs.
+// Vite config for the Apa kiosk frontend.
+// In dev, /api is proxied to `wrangler pages dev` on :8787, which runs the real
+// Cloudflare Pages Functions from /functions (same code as production).
 export default defineConfig({
   base: process.env.GITHUB_PAGES_BASE ?? '/',
   plugins: [react(), tailwindcss()],
