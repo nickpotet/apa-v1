@@ -2,7 +2,7 @@
 
 Vertical-screen public-facing AI kiosk for **cggalleries.com** — a penguin-themed Virtual Reality exhibition at **Carrer Sant Romà 12, Lloret de Mar (Girona)**. A stylized Rive penguin named **Apa** speaks in ES/EN/RU/CA, draws passersby with a local attract-loop, and converts curiosity into ticketed walk-ins. v1 is a 7-day MVP deployed to Nick's home first, then to the venue.
 
-**Important framing:** cggalleries.com is *not* an art gallery. It is a penguin VR exhibition with ticket tiers from €0 (under 5) to €32 (family) to a Maxi €22 package (5 VR episodes + Ice Cube Challenge + audio tale). Ap lives there — he's home, not lost.
+**Important framing:** cggalleries.com is *not* an art gallery. It is a penguin VR exhibition with ticket tiers from €0 (under 5) to €35 (family) to a Maxi €22 package (5 VR episodes + Ice Cube Challenge + audio tale). Ap lives there — he's home, not lost.
 
 ## Stack
 
@@ -22,6 +22,7 @@ Vertical-screen public-facing AI kiosk for **cggalleries.com** — a penguin-the
 5. **Never invent facts.** Prices, hours, services come from `/config/*.json`. If a fact is missing, Ap redirects to **Natalia** (the real receptionist) — never fabricates. **Never invent reward phrases** either; the only real reward mechanic is the magnet-for-story/review described in `pricing.json`.
 6. **Privacy.** No raw audio stored. Logs hold anonymized transcript text + counters only. Public-facing GDPR sign required when deployed on the street (see `docs/GDPR.md`).
 7. **No burn-in.** No fully static UI region; penguin always breathes; hint chips rotate slowly. Nightly low-brightness `sleeping` state.
+8. **Version every change.** `config/app_version.json` is the source of truth. After any code, config, prompt, content, or asset change, run `npm run version:bump` exactly once before verification or deployment. Logs and conversation exports must include this version.
 
 ## Rive state machine `ApState`
 

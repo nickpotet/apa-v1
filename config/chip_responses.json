@@ -1,135 +1,314 @@
 {
-  "$comment": "Pre-recorded local responses for scenario chips. Three variants per chip per language. Keep facts aligned with pricing.json and gallery_faq.json.",
   "family": {
     "es": [
-      { "id": "family_01", "text": "Plan familiar aprobado. El ticket familiar es para dos adultos y dos niños, con dos episodios de VR por persona." },
-      { "id": "family_02", "text": "Si venís con niños, esto encaja muy bien: pingüinos, foto zona, tienda de juguetes y dos VR incluidos por entrada." },
-      { "id": "family_03", "text": "Para familia, mirad el ticket familiar. Y si queréis más aventura, el Maxi trae cinco episodios de VR." }
+      { "id": "family_01", "text": "Plan familiar aprobado. El ticket familiar es para dos adultos y dos niños, con un episodio de realidad virtual por persona." },
+      { "id": "family_02", "text": "Si venís con niños, esto encaja muy bien: pingüinos, foto zona, tienda de juguetes y un episodio de realidad virtual incluido por entrada." },
+      { "id": "family_03", "text": "El ticket familiar incluye un episodio de realidad virtual por persona. Si queréis más aventura, el Maxi incluye cinco episodios." }
     ],
     "en": [
-      { "id": "family_01", "text": "Family plan approved. The family ticket is for two adults and two kids, with two VR episodes per person." },
-      { "id": "family_02", "text": "With kids, this works well: penguins, a photo spot, a toy shop, and two VR episodes included with entry." },
-      { "id": "family_03", "text": "For a family, look at the family ticket. For more adventure, Maxi includes five VR episodes." }
+      { "id": "family_01", "text": "Family plan approved. The family ticket is for two adults and two kids, with one virtual reality episode per person." },
+      { "id": "family_02", "text": "With kids, this works well: penguins, a photo spot, a toy shop, and one virtual reality episode included with entry." },
+      { "id": "family_03", "text": "The family ticket includes one virtual reality episode per person. For more adventure, Maxi includes five episodes." }
     ],
     "ru": [
-      { "id": "family_01", "text": "Для семьи есть семейный билет: два взрослых и два ребёнка, вход и два VR-эпизода на каждого." },
-      { "id": "family_02", "text": "С детьми здесь удобно: пингвины, фотозона, магазин игрушек и два VR-эпизода включены во вход." },
-      { "id": "family_03", "text": "Для семьи посмотрите семейный билет. Если хочется больше приключений, в Maxi входит пять VR-эпизодов." }
+      { "id": "family_01", "text": "Семейный билет включает вход и один эпизод виртуальной реальности на каждого: два взрослых и два ребёнка." },
+      { "id": "family_02", "text": "С детьми здесь удобно: пингвины, фотозона, магазин игрушек и один эпизод виртуальной реальности включён во вход." },
+      { "id": "family_03", "text": "В семейный билет входит один эпизод виртуальной реальности на каждого. Если хочется больше приключений, в Maxi входит пять эпизодов." }
     ],
     "ca": [
-      { "id": "family_01", "text": "Pla familiar aprovat. El tiquet familiar és per a dos adults i dos nens, amb dos episodis de VR per persona." },
-      { "id": "family_02", "text": "Amb nens encaixa molt bé: pingüins, zona de fotos, botiga de joguines i dos VR inclosos amb l'entrada." },
-      { "id": "family_03", "text": "Per a família, mireu el tiquet familiar. Si voleu més aventura, el Maxi inclou cinc episodis de VR." }
+      { "id": "family_01", "text": "Pla familiar aprovat. El tiquet familiar és per a dos adults i dos nens, amb un episodi de realitat virtual per persona." },
+      { "id": "family_02", "text": "Amb nens encaixa molt bé: pingüins, zona de fotos, botiga de joguines i un episodi de realitat virtual inclòs amb l'entrada." },
+      { "id": "family_03", "text": "El tiquet familiar inclou un episodi de realitat virtual per persona. Si voleu més aventura, el Maxi inclou cinc episodis." }
+    ],
+    "fr": [
+      { "id": "family_01", "text": "Plan famille validé. Le billet famille est pour deux adultes et deux enfants, avec un épisode de réalité virtuelle par personne." },
+      { "id": "family_02", "text": "Avec des enfants, ça marche très bien : pingouins, zone photo, boutique de jouets et un épisode de réalité virtuelle inclus avec l’entrée." },
+      { "id": "family_03", "text": "Le billet famille comprend un épisode de réalité virtuelle par personne. Pour plus d’aventure, le Maxi comprend cinq épisodes." }
+    ],
+    "de": [
+      { "id": "family_01", "text": "Familienplan genehmigt. Das Familienticket gilt für zwei Erwachsene und zwei Kinder, mit einer Episode in virtueller Realität pro Person." },
+      { "id": "family_02", "text": "Mit Kindern passt das sehr gut: Pinguine, Fotozone, Spielzeugladen und eine Episode in virtueller Realität im Eintritt." },
+      { "id": "family_03", "text": "Das Familienticket enthält eine Episode in virtueller Realität pro Person. Für mehr Abenteuer enthält Maxi fünf Episoden." }
+    ],
+    "uk": [
+      { "id": "family_01", "text": "Сімейний план схвалено. Сімейний квиток — для двох дорослих і двох дітей, з одним епізодом віртуальної реальності на кожного." },
+      { "id": "family_02", "text": "З дітьми тут чудово: пінгвіни, фотозона, магазин іграшок і один епізод віртуальної реальності у вартості входу." },
+      { "id": "family_03", "text": "Сімейний квиток включає один епізод віртуальної реальності на кожного. Якщо хочеться більше пригод, Maxi включає п’ять епізодів." }
+    ],
+    "sr": [
+      { "id": "family_01", "text": "Porodični plan odobren. Porodična karta važi za dve odrasle osobe i dvoje dece, sa jednom epizodom virtuelne stvarnosti po osobi." },
+      { "id": "family_02", "text": "Sa decom je ovo odličan izbor: pingvini, foto-zona, prodavnica igračaka i jedna epizoda virtuelne stvarnosti uz ulaz." },
+      { "id": "family_03", "text": "Porodična karta uključuje jednu epizodu virtuelne stvarnosti po osobi. Ako želite više avanture, Maxi uključuje pet epizoda." }
+    ],
+    "it": [
+      { "id": "family_01", "text": "Piano famiglia approvato. Il biglietto famiglia vale per due adulti e due bambini, con un episodio di realtà virtuale a persona." },
+      { "id": "family_02", "text": "Con i bambini funziona benissimo: pinguini, zona foto, negozio di giocattoli e un episodio di realtà virtuale incluso nell’ingresso." },
+      { "id": "family_03", "text": "Il biglietto famiglia include un episodio di realtà virtuale a persona. Per più avventura, Maxi include cinque episodi." }
+    ],
+    "pl": [
+      { "id": "family_01", "text": "Plan rodzinny zatwierdzony. Bilet rodzinny jest dla dwojga dorosłych i dwojga dzieci, z jednym odcinkiem wirtualnej rzeczywistości na osobę." },
+      { "id": "family_02", "text": "Z dziećmi sprawdza się świetnie: pingwiny, fotostrefa, sklep z zabawkami i jeden odcinek wirtualnej rzeczywistości w cenie biletu." },
+      { "id": "family_03", "text": "Bilet rodzinny obejmuje jeden odcinek wirtualnej rzeczywistości na osobę. Jeśli chcecie więcej przygód, Maxi obejmuje pięć odcinków." }
     ]
   },
   "couple": {
     "es": [
-      { "id": "couple_01", "text": "Para pareja, yo haría dos VR y luego foto. El kayak antártico con pingüinos y orcas es buen comienzo." },
-      { "id": "couple_02", "text": "Si buscáis algo distinto, entrad a probar VR juntos. En la entrada estándar van dos episodios incluidos." },
-      { "id": "couple_03", "text": "Plan rápido y bonito: una experiencia de pingüinos, dos VR incluidos y una foto para recordar que vinisteis al frío." }
+      { "id": "couple_01", "text": "Para pareja, yo haría la realidad virtual y luego foto. El kayak antártico con pingüinos y orcas es buen comienzo." },
+      { "id": "couple_02", "text": "Si buscáis algo distinto, entrad a probar realidad virtual juntos. En la entrada estándar va un episodio incluido." },
+      { "id": "couple_03", "text": "Plan rápido y bonito: una experiencia de pingüinos, un episodio de realidad virtual incluido y una foto para recordar que vinisteis al frío." }
     ],
     "en": [
-      { "id": "couple_01", "text": "For a couple, I would do two VR episodes and then a photo. The Antarctic kayak with penguins and orcas is a strong start." },
-      { "id": "couple_02", "text": "If you want something different, try VR together. The standard entry includes two episodes." },
-      { "id": "couple_03", "text": "Quick and memorable: a penguin experience, two VR episodes included, and a photo to prove you visited the cold." }
+      { "id": "couple_01", "text": "For a couple, I would do the virtual reality episode and then a photo. The Antarctic kayak with penguins and orcas is a strong start." },
+      { "id": "couple_02", "text": "If you want something different, try virtual reality together. The standard entry includes one episode." },
+      { "id": "couple_03", "text": "Quick and memorable: a penguin experience, one virtual reality episode included, and a photo to prove you visited the cold." }
     ],
     "ru": [
-      { "id": "couple_01", "text": "Для пары я бы начал с двух VR-эпизодов, а потом фото. Каяк среди пингвинов и косаток — сильное начало." },
-      { "id": "couple_02", "text": "Если хотите что-то необычное, попробуйте VR вместе. В стандартный вход входят два эпизода." },
-      { "id": "couple_03", "text": "Быстрый и красивый план: пингвины, два VR-эпизода включены и фото на память из Антарктиды." }
+      { "id": "couple_01", "text": "Для пары я бы начал с эпизода виртуальной реальности, а потом фото. Каяк среди пингвинов и косаток — сильное начало." },
+      { "id": "couple_02", "text": "Если хотите что-то необычное, попробуйте виртуальную реальность вместе. В стандартный вход входит один эпизод." },
+      { "id": "couple_03", "text": "Быстрый и красивый план: пингвины, один эпизод виртуальной реальности включён и фото на память из Антарктиды." }
     ],
     "ca": [
-      { "id": "couple_01", "text": "Per a parella, faria dos VR i després foto. El caiac antàrtic amb pingüins i orques és un bon inici." },
-      { "id": "couple_02", "text": "Si busqueu alguna cosa diferent, proveu VR junts. L'entrada estàndard inclou dos episodis." },
-      { "id": "couple_03", "text": "Pla ràpid i bonic: experiència de pingüins, dos VR inclosos i una foto per recordar el fred." }
+      { "id": "couple_01", "text": "Per a parella, faria la realitat virtual i després foto. El caiac antàrtic amb pingüins i orques és un bon inici." },
+      { "id": "couple_02", "text": "Si busqueu alguna cosa diferent, proveu realitat virtual junts. L'entrada estàndard inclou un episodi." },
+      { "id": "couple_03", "text": "Pla ràpid i bonic: experiència de pingüins, un episodi de realitat virtual inclòs i una foto per recordar el fred." }
+    ],
+    "fr": [
+      { "id": "couple_01", "text": "Pour un couple, je ferais l'épisode de réalité virtuelle puis une photo. Le kayak antarctique avec pingouins et orques est un très bon début." },
+      { "id": "couple_02", "text": "Si vous cherchez quelque chose de différent, essayez la réalité virtuelle ensemble. L’entrée standard inclut un épisode." },
+      { "id": "couple_03", "text": "Plan rapide et mémorable : une expérience pingouins, un épisode de réalité virtuelle inclus et une photo pour prouver que vous avez visité le froid." }
+    ],
+    "de": [
+      { "id": "couple_01", "text": "Als Paar würde ich erst die Episode in virtueller Realität und danach ein Foto machen. Das Antarktis-Kajak mit Pinguinen und Orcas ist ein starker Anfang." },
+      { "id": "couple_02", "text": "Wenn ihr etwas anderes sucht, probiert virtuelle Realität zusammen aus. Der normale Eintritt enthält eine Episode." },
+      { "id": "couple_03", "text": "Ein kurzer besonderer Plan: Pinguine, eine enthaltene Episode in virtueller Realität und ein Foto als Beweis für euren Besuch in der Kälte." }
+    ],
+    "uk": [
+      { "id": "couple_01", "text": "Для пари я б почав з епізоду віртуальної реальності, а потім зробив фото. Антарктичний каяк серед пінгвінів і косаток — чудовий початок." },
+      { "id": "couple_02", "text": "Якщо хочете чогось незвичайного, спробуйте віртуальну реальність разом. Зі звичайним входом включено один епізод." },
+      { "id": "couple_03", "text": "Швидкий і пам’ятний план: пінгвіни, один включений епізод віртуальної реальності і фото на згадку про холод." }
+    ],
+    "sr": [
+      { "id": "couple_01", "text": "Za par bih prvo izabrao epizodu virtuelne stvarnosti, a zatim fotografiju. Antarktički kajak sa pingvinima i orkama je odličan početak." },
+      { "id": "couple_02", "text": "Ako tražite nešto drugačije, isprobajte virtuelnu stvarnost zajedno. Standardni ulaz uključuje jednu epizodu." },
+      { "id": "couple_03", "text": "Kratak i poseban plan: pingvini, jedna uključena epizoda virtuelne stvarnosti i fotografija kao dokaz posete hladnoći." }
+    ],
+    "it": [
+      { "id": "couple_01", "text": "Per una coppia sceglierei prima l’episodio di realtà virtuale e poi una foto. Il kayak antartico con pinguini e orche è un ottimo inizio." },
+      { "id": "couple_02", "text": "Se cercate qualcosa di diverso, provate la realtà virtuale insieme. L’ingresso standard include un episodio." },
+      { "id": "couple_03", "text": "Un piano breve e memorabile: pinguini, un episodio di realtà virtuale incluso e una foto per dimostrare che avete visitato il freddo." }
+    ],
+    "pl": [
+      { "id": "couple_01", "text": "Dla pary wybrałbym najpierw odcinek wirtualnej rzeczywistości, a potem zdjęcie. Kajak antarktyczny z pingwinami i orkami to świetny początek." },
+      { "id": "couple_02", "text": "Jeśli szukacie czegoś innego, wypróbujcie wirtualną rzeczywistość razem. Standardowy bilet obejmuje jeden odcinek." },
+      { "id": "couple_03", "text": "Krótki i niezapomniany plan: pingwiny, jeden odcinek wirtualnej rzeczywistości w cenie i zdjęcie na dowód wizyty w chłodzie." }
     ]
   },
   "photoHobbyist": {
     "es": [
       { "id": "photoHobbyist_01", "text": "Sí, fotos permitidas. Hay zona de fotos, y si subes una story etiquetándonos, te regalan un imán." },
-      { "id": "photoHobbyist_02", "text": "Puedes hacer fotos. Mi consejo de pingüino: foto primero, VR después, y story con etiqueta para el imán." },
+      { "id": "photoHobbyist_02", "text": "Puedes hacer fotos. Mi consejo de pingüino: foto primero, realidad virtual después, y story con etiqueta para el imán." },
       { "id": "photoHobbyist_03", "text": "Aquí las fotos son bienvenidas. Pregunta a Natalia si quieres saber el mejor rincón para posar." }
     ],
     "en": [
       { "id": "photoHobbyist_01", "text": "Yes, photos are allowed. There is a photo spot, and if you tag us in a story, you get a magnet." },
-      { "id": "photoHobbyist_02", "text": "You can take photos. Penguin advice: photo first, VR after, and a tagged story for the magnet." },
+      { "id": "photoHobbyist_02", "text": "You can take photos. Penguin advice: photo first, virtual reality after, and a tagged story for the magnet." },
       { "id": "photoHobbyist_03", "text": "Photos are welcome here. Ask Natalia if you want the best corner for posing." }
     ],
     "ru": [
       { "id": "photoHobbyist_01", "text": "Да, фотографировать можно. Есть фотозона, а за сторис с отметкой дают магнит." },
-      { "id": "photoHobbyist_02", "text": "Фото можно. Совет пингвина: сначала фото, потом VR, и сторис с отметкой ради магнита." },
+      { "id": "photoHobbyist_02", "text": "Фото можно. Совет пингвина: сначала фото, потом виртуальная реальность, и сторис с отметкой ради магнита." },
       { "id": "photoHobbyist_03", "text": "Фотографии здесь приветствуются. Лучший угол для позирования подскажет Наталия." }
     ],
     "ca": [
       { "id": "photoHobbyist_01", "text": "Sí, es poden fer fotos. Hi ha zona de fotos, i si ens etiquetes en una story, et regalen un imant." },
-      { "id": "photoHobbyist_02", "text": "Pots fer fotos. Consell de pingüí: foto primer, VR després, i story amb etiqueta per l'imant." },
+      { "id": "photoHobbyist_02", "text": "Pots fer fotos. Consell de pingüí: foto primer, realitat virtual després, i story amb etiqueta per l'imant." },
       { "id": "photoHobbyist_03", "text": "Les fotos són benvingudes aquí. Pregunta a la Natalia pel millor racó per posar." }
+    ],
+    "fr": [
+      { "id": "photoHobbyist_01", "text": "Oui, les photos sont autorisées. Il y a une zone photo, et si tu nous identifies en story, on t’offre un aimant." },
+      { "id": "photoHobbyist_02", "text": "Tu peux prendre des photos. Conseil de pingouin : photo d’abord, réalité virtuelle ensuite, et story avec tag pour l’aimant." },
+      { "id": "photoHobbyist_03", "text": "Les photos sont les bienvenues ici. Demande à Natalia le meilleur coin pour poser." }
+    ],
+    "de": [
+      { "id": "photoHobbyist_01", "text": "Ja, Fotografieren ist erlaubt. Es gibt eine Fotozone, und für eine Story mit Markierung bekommt ihr einen Magneten." },
+      { "id": "photoHobbyist_02", "text": "Du darfst Fotos machen. Pinguin-Tipp: erst Foto, dann virtuelle Realität und eine markierte Story für den Magneten." },
+      { "id": "photoHobbyist_03", "text": "Fotos sind hier willkommen. Natalia zeigt dir gern die beste Ecke zum Posieren." }
+    ],
+    "uk": [
+      { "id": "photoHobbyist_01", "text": "Так, фотографувати можна. Є фотозона, а за сторіс із нашою відміткою подарують магніт." },
+      { "id": "photoHobbyist_02", "text": "Фото дозволені. Порада пінгвіна: спочатку фото, потім віртуальна реальність і сторіс із відміткою заради магніту." },
+      { "id": "photoHobbyist_03", "text": "Фотографії тут вітаються. Найкращий куточок для позування підкаже Наталія." }
+    ],
+    "sr": [
+      { "id": "photoHobbyist_01", "text": "Da, fotografisanje je dozvoljeno. Imamo foto-zonu, a za story sa našom oznakom dobijaš magnet." },
+      { "id": "photoHobbyist_02", "text": "Možeš da fotografišeš. Savet pingvina: prvo fotografija, zatim virtuelna stvarnost i označeni story za magnet." },
+      { "id": "photoHobbyist_03", "text": "Fotografije su ovde dobrodošle. Natalia će ti pokazati najbolji ugao za poziranje." }
+    ],
+    "it": [
+      { "id": "photoHobbyist_01", "text": "Sì, le foto sono permesse. C’è una zona foto e con una story in cui ci tagghi ricevi un magnete." },
+      { "id": "photoHobbyist_02", "text": "Puoi fare foto. Consiglio da pinguino: prima la foto, poi la realtà virtuale e una story con tag per il magnete." },
+      { "id": "photoHobbyist_03", "text": "Qui le foto sono benvenute. Chiedi a Natalia qual è l’angolo migliore per posare." }
+    ],
+    "pl": [
+      { "id": "photoHobbyist_01", "text": "Tak, zdjęcia są dozwolone. Jest fotostrefa, a za relację z naszym oznaczeniem dostaniesz magnes." },
+      { "id": "photoHobbyist_02", "text": "Możesz robić zdjęcia. Pingwinia rada: najpierw zdjęcie, potem wirtualna rzeczywistość i relacja z oznaczeniem po magnes." },
+      { "id": "photoHobbyist_03", "text": "Zdjęcia są tu mile widziane. Zapytaj Natalię o najlepszy kącik do pozowania." }
     ]
   },
   "gift": {
     "es": [
       { "id": "gift_01", "text": "Para regalo, mira la tienda de juguetes. Hay pingüinos, claro. Yo soy imparcial, más o menos." },
       { "id": "gift_02", "text": "Si buscas regalo, entra a la tienda. Y con una story etiquetada, también puedes llevarte un imán." },
-      { "id": "gift_03", "text": "Regalo fácil: algo de la tienda de juguetes, o el Maxi si quieres experiencia completa con VR y audio cuento." }
+      { "id": "gift_03", "text": "Regalo fácil: algo de la tienda de juguetes, o el Maxi si quieres experiencia completa con realidad virtual y audio cuento." }
     ],
     "en": [
       { "id": "gift_01", "text": "For a gift, check the toy shop. There are penguins, obviously. I am almost unbiased." },
       { "id": "gift_02", "text": "If you need a gift, step into the shop. With a tagged story, you can also get a magnet." },
-      { "id": "gift_03", "text": "Easy gift: something from the toy shop, or Maxi for the full VR plus audio tale experience." }
+      { "id": "gift_03", "text": "Easy gift: something from the toy shop, or Maxi for the full virtual reality plus audio tale experience." }
     ],
     "ru": [
       { "id": "gift_01", "text": "Для подарка загляните в магазин игрушек. Там есть пингвины, конечно. Я почти объективен." },
       { "id": "gift_02", "text": "Если нужен подарок, зайдите в магазин. А за сторис с отметкой можно получить магнит." },
-      { "id": "gift_03", "text": "Простой подарок: что-то из магазина игрушек. Или Maxi, если нужна полная история с VR и аудиосказкой." }
+      { "id": "gift_03", "text": "Простой подарок: что-то из магазина игрушек. Или Maxi, если нужна полная история с виртуальной реальностью и аудиосказкой." }
     ],
     "ca": [
       { "id": "gift_01", "text": "Per a regal, mira la botiga de joguines. Hi ha pingüins, és clar. Soc gairebé imparcial." },
       { "id": "gift_02", "text": "Si busques regal, entra a la botiga. Amb una story etiquetada també pots endur-te un imant." },
-      { "id": "gift_03", "text": "Regal fàcil: alguna cosa de la botiga, o el Maxi si vols VR i conte en àudio." }
+      { "id": "gift_03", "text": "Regal fàcil: alguna cosa de la botiga, o el Maxi si vols realitat virtual i conte en àudio." }
+    ],
+    "fr": [
+      { "id": "gift_01", "text": "Pour un cadeau, regarde la boutique de jouets. Il y a des pingouins, évidemment. Je suis presque objectif." },
+      { "id": "gift_02", "text": "Si tu cherches un cadeau, entre dans la boutique. Avec une story taguée, tu peux aussi recevoir un aimant." },
+      { "id": "gift_03", "text": "Cadeau facile : quelque chose de la boutique, ou le Maxi pour l’expérience complète avec réalité virtuelle et conte audio." }
+    ],
+    "de": [
+      { "id": "gift_01", "text": "Für ein Geschenk schau in den Spielzeugladen. Dort gibt es natürlich Pinguine. Ich bin fast unparteiisch." },
+      { "id": "gift_02", "text": "Wenn du ein Geschenk suchst, komm in den Laden. Mit einer markierten Story kannst du außerdem einen Magneten bekommen." },
+      { "id": "gift_03", "text": "Ein einfaches Geschenk: etwas aus dem Spielzeugladen oder Maxi für das komplette Erlebnis mit virtueller Realität und Audiogeschichte." }
+    ],
+    "uk": [
+      { "id": "gift_01", "text": "За подарунком зазирни до магазину іграшок. Там, звісно, є пінгвіни. Я майже неупереджений." },
+      { "id": "gift_02", "text": "Якщо шукаєш подарунок, заходь до магазину. А за сторіс із відміткою можна ще отримати магніт." },
+      { "id": "gift_03", "text": "Простий подарунок: щось із магазину або Maxi для повної пригоди з віртуальною реальністю та аудіоказкою." }
+    ],
+    "sr": [
+      { "id": "gift_01", "text": "Za poklon pogledaj prodavnicu igračaka. Tamo su, naravno, pingvini. Ja sam skoro nepristrasan." },
+      { "id": "gift_02", "text": "Ako tražiš poklon, uđi u prodavnicu. Uz označeni story možeš dobiti i magnet." },
+      { "id": "gift_03", "text": "Jednostavan poklon: nešto iz prodavnice ili Maxi za potpuno iskustvo sa virtuelnom stvarnošću i audio-pričom." }
+    ],
+    "it": [
+      { "id": "gift_01", "text": "Per un regalo guarda nel negozio di giocattoli. Ci sono pinguini, ovviamente. Sono quasi imparziale." },
+      { "id": "gift_02", "text": "Se cerchi un regalo, entra nel negozio. Con una story in cui ci tagghi puoi ricevere anche un magnete." },
+      { "id": "gift_03", "text": "Regalo facile: qualcosa dal negozio oppure Maxi per l’esperienza completa con la realtà virtuale e racconto audio." }
+    ],
+    "pl": [
+      { "id": "gift_01", "text": "Jeśli szukasz prezentu, zajrzyj do sklepu z zabawkami. Są tam pingwiny, oczywiście. Jestem prawie bezstronny." },
+      { "id": "gift_02", "text": "Jeśli potrzebujesz prezentu, wejdź do sklepu. Za relację z naszym oznaczeniem możesz też dostać magnes." },
+      { "id": "gift_03", "text": "Prosty prezent: coś ze sklepu albo Maxi z pełnym doświadczeniem wirtualnej rzeczywistości i opowieścią audio." }
     ]
   },
   "howMuch": {
     "es": [
-      { "id": "howMuch_01", "text": "Entrada general: doce euros. Reducida: nueve cincuenta. Familiar: treinta y dos. Menores de cinco, gratis." },
-      { "id": "howMuch_02", "text": "El Maxi cuesta veintidós euros e incluye cinco episodios de VR, Ice Cube Challenge y audio cuento." },
-      { "id": "howMuch_03", "text": "La entrada estándar incluye dos VR. Si quieres VR extra, el precio actual te lo dice Natalia." }
+      { "id": "howMuch_01", "text": "Entrada general: doce euros. Reducida: nueve cincuenta. Familiar: treinta y cinco. Menores de cinco, gratis." },
+      { "id": "howMuch_02", "text": "El Maxi cuesta veintidós euros e incluye cinco episodios de realidad virtual, Ice Cube Challenge y audio cuento." },
+      { "id": "howMuch_03", "text": "La entrada estándar incluye un episodio de realidad virtual. Si quieres realidad virtual adicional, el precio actual te lo dice Natalia." }
     ],
     "en": [
-      { "id": "howMuch_01", "text": "General entry is twelve euros. Reduced is nine fifty. Family is thirty-two. Kids under five enter free." },
-      { "id": "howMuch_02", "text": "Maxi is twenty-two euros and includes five VR episodes, Ice Cube Challenge, and the audio tale." },
-      { "id": "howMuch_03", "text": "Standard entry includes two VR episodes. For extra VR, Natalia has the current price." }
+      { "id": "howMuch_01", "text": "General entry is twelve euros. Reduced is nine fifty. Family is thirty-five. Kids under five enter free." },
+      { "id": "howMuch_02", "text": "Maxi is twenty-two euros and includes five virtual reality episodes, Ice Cube Challenge, and the audio tale." },
+      { "id": "howMuch_03", "text": "Standard entry includes one virtual reality episode. For extra virtual reality, Natalia has the current price." }
     ],
     "ru": [
-      { "id": "howMuch_01", "text": "Обычный билет — двенадцать евро. Льготный — девять пятьдесят. Семейный — тридцать два. До пяти лет бесплатно." },
-      { "id": "howMuch_02", "text": "Maxi стоит двадцать два евро: пять VR-эпизодов, Ice Cube Challenge и аудиосказка." },
-      { "id": "howMuch_03", "text": "В стандартный вход входят два VR-эпизода. Цену дополнительных VR подскажет Наталия." }
+      { "id": "howMuch_01", "text": "Обычный билет — двенадцать евро. Льготный — девять пятьдесят. Семейный — тридцать пять. До пяти лет бесплатно." },
+      { "id": "howMuch_02", "text": "Maxi стоит двадцать два евро: пять эпизодов виртуальной реальности, Ice Cube Challenge и аудиосказка." },
+      { "id": "howMuch_03", "text": "В стандартный вход входит один эпизод виртуальной реальности. Цену дополнительных эпизодов виртуальной реальности подскажет Наталия." }
     ],
     "ca": [
-      { "id": "howMuch_01", "text": "Entrada general: dotze euros. Reduïda: nou cinquanta. Familiar: trenta-dos. Menors de cinc, gratis." },
-      { "id": "howMuch_02", "text": "El Maxi costa vint-i-dos euros i inclou cinc VR, Ice Cube Challenge i conte en àudio." },
-      { "id": "howMuch_03", "text": "L'entrada estàndard inclou dos VR. Per VR extra, la Natalia té el preu actual." }
+      { "id": "howMuch_01", "text": "Entrada general: dotze euros. Reduïda: nou cinquanta. Familiar: trenta-cinc. Menors de cinc, gratis." },
+      { "id": "howMuch_02", "text": "El Maxi costa vint-i-dos euros i inclou cinc episodis de realitat virtual, Ice Cube Challenge i conte en àudio." },
+      { "id": "howMuch_03", "text": "L'entrada estàndard inclou un episodi de realitat virtual. Per a realitat virtual addicional, la Natalia té el preu actual." }
+    ],
+    "fr": [
+      { "id": "howMuch_01", "text": "L’entrée générale coûte douze euros. Le tarif réduit, neuf cinquante. Le billet famille, trente-cinq. Moins de cinq ans, gratuit." },
+      { "id": "howMuch_02", "text": "Le Maxi coûte vingt-deux euros et inclut cinq épisodes de réalité virtuelle, Ice Cube Challenge et le conte audio." },
+      { "id": "howMuch_03", "text": "L’entrée standard inclut un épisode de réalité virtuelle. Pour la réalité virtuelle supplémentaire, Natalia te donnera le prix actuel." }
+    ],
+    "de": [
+      { "id": "howMuch_01", "text": "Der normale Eintritt kostet zwölf Euro, ermäßigt neun fünfzig, das Familienticket fünfunddreißig. Unter fünf Jahren ist der Eintritt frei." },
+      { "id": "howMuch_02", "text": "Maxi kostet zweiundzwanzig Euro und enthält fünf Episoden in virtueller Realität, die Ice Cube Challenge und die Audiogeschichte." },
+      { "id": "howMuch_03", "text": "Der normale Eintritt enthält eine Episode in virtueller Realität. Den aktuellen Preis für zusätzliche Episoden in virtueller Realität nennt dir Natalia." }
+    ],
+    "uk": [
+      { "id": "howMuch_01", "text": "Звичайний квиток коштує дванадцять євро, пільговий — дев’ять п’ятдесят, сімейний — тридцять п’ять. Дітям до п’яти років безкоштовно." },
+      { "id": "howMuch_02", "text": "Maxi коштує двадцять два євро і включає п’ять епізодів віртуальної реальності, Ice Cube Challenge та аудіоказку." },
+      { "id": "howMuch_03", "text": "Зі звичайним входом включено один епізод віртуальної реальності. Актуальну ціну додаткового епізоду віртуальної реальності підкаже Наталія." }
+    ],
+    "sr": [
+      { "id": "howMuch_01", "text": "Standardna karta košta dvanaest evra, snižena devet i po, a porodična trideset pet. Deca mlađa od pet godina ulaze besplatno." },
+      { "id": "howMuch_02", "text": "Maxi košta dvadeset dva evra i uključuje pet epizoda virtuelne stvarnosti, Ice Cube Challenge i audio-priču." },
+      { "id": "howMuch_03", "text": "Standardni ulaz uključuje jednu epizodu virtuelne stvarnosti. Aktuelnu cenu dodatne epizode virtuelne stvarnosti zna Natalia." }
+    ],
+    "it": [
+      { "id": "howMuch_01", "text": "L’ingresso generale costa dodici euro, il ridotto nove e cinquanta, il familiare trentacinque. Sotto i cinque anni è gratuito." },
+      { "id": "howMuch_02", "text": "Maxi costa ventidue euro e include cinque episodi di realtà virtuale, Ice Cube Challenge e il racconto audio." },
+      { "id": "howMuch_03", "text": "L’ingresso standard include un episodio di realtà virtuale. Natalia conosce il prezzo aggiornato della realtà virtuale aggiuntiva." }
+    ],
+    "pl": [
+      { "id": "howMuch_01", "text": "Bilet normalny kosztuje dwanaście euro, ulgowy dziewięć pięćdziesiąt, a rodzinny trzydzieści pięć. Dzieci poniżej pięciu lat wchodzą bezpłatnie." },
+      { "id": "howMuch_02", "text": "Maxi kosztuje dwadzieścia dwa euro i obejmuje pięć odcinków wirtualnej rzeczywistości, Ice Cube Challenge oraz opowieść audio." },
+      { "id": "howMuch_03", "text": "Standardowy bilet obejmuje jeden odcinek wirtualnej rzeczywistości. Aktualną cenę dodatkowych odcinków wirtualnej rzeczywistości poda Natalia." }
     ]
   },
   "curiosity": {
     "es": [
       { "id": "curiosity_01", "text": "Esto es CGGallery, Antarctica: una exposición inmersiva sobre pingüinos con Realidad Virtual en Lloret de Mar." },
-      { "id": "curiosity_02", "text": "Aquí vives Antártida sin congelarte: pingüinos, VR, zona de fotos y una tienda de juguetes." },
-      { "id": "curiosity_03", "text": "Mi casa es una experiencia de pingüinos. En VR puedes hacer kayak, escalar y buscar dentro de un campamento antártico." }
+      { "id": "curiosity_02", "text": "Aquí vives Antártida sin congelarte: pingüinos, realidad virtual, zona de fotos y una tienda de juguetes." },
+      { "id": "curiosity_03", "text": "Mi casa es una experiencia de pingüinos. En realidad virtual puedes hacer kayak, escalar y buscar dentro de un campamento antártico." }
     ],
     "en": [
       { "id": "curiosity_01", "text": "This is CGGallery, Antarctica: an immersive penguin exhibition with Virtual Reality in Lloret de Mar." },
-      { "id": "curiosity_02", "text": "Here you visit Antarctica without freezing: penguins, VR, a photo spot, and a toy shop." },
-      { "id": "curiosity_03", "text": "My home is a penguin experience. In VR you can kayak, climb, and search inside an Antarctic camp." }
+      { "id": "curiosity_02", "text": "Here you visit Antarctica without freezing: penguins, virtual reality, a photo spot, and a toy shop." },
+      { "id": "curiosity_03", "text": "My home is a penguin experience. In virtual reality you can kayak, climb, and search inside an Antarctic camp." }
     ],
     "ru": [
-      { "id": "curiosity_01", "text": "Это CGGallery, Antarctica: иммерсивная выставка про пингвинов с VR в Льорет-де-Мар." },
-      { "id": "curiosity_02", "text": "Здесь можно попасть в Антарктиду без обморожения: пингвины, VR, фотозона и магазин игрушек." },
-      { "id": "curiosity_03", "text": "Мой дом — это пингвинья VR-выставка. Можно плыть на каяке, лазать и искать в антарктическом лагере." }
+      { "id": "curiosity_01", "text": "Это CGGallery, Antarctica: иммерсивная выставка про пингвинов с виртуальной реальностью в Льорет-де-Мар." },
+      { "id": "curiosity_02", "text": "Здесь можно попасть в Антарктиду без обморожения: пингвины, виртуальная реальность, фотозона и магазин игрушек." },
+      { "id": "curiosity_03", "text": "Мой дом — это пингвинья выставка с виртуальной реальностью. Можно плыть на каяке, лазать и искать в антарктическом лагере." }
     ],
     "ca": [
       { "id": "curiosity_01", "text": "Això és CGGallery, Antarctica: una exposició immersiva de pingüins amb Realitat Virtual a Lloret de Mar." },
-      { "id": "curiosity_02", "text": "Aquí visites l'Antàrtida sense congelar-te: pingüins, VR, zona de fotos i botiga de joguines." },
-      { "id": "curiosity_03", "text": "Casa meva és una experiència de pingüins. En VR pots fer caiac, escalar i buscar dins un campament antàrtic." }
+      { "id": "curiosity_02", "text": "Aquí visites l'Antàrtida sense congelar-te: pingüins, realitat virtual, zona de fotos i botiga de joguines." },
+      { "id": "curiosity_03", "text": "Casa meva és una experiència de pingüins. En realitat virtual pots fer caiac, escalar i buscar dins un campament antàrtic." }
+    ],
+    "fr": [
+      { "id": "curiosity_01", "text": "Ici, c’est CGGallery, Antarctica : une exposition immersive sur les pingouins avec réalité virtuelle à Lloret de Mar." },
+      { "id": "curiosity_02", "text": "Ici, tu visites l’Antarctique sans geler : pingouins, réalité virtuelle, zone photo et boutique de jouets." },
+      { "id": "curiosity_03", "text": "Ma maison est une expérience de pingouins. En réalité virtuelle, tu peux faire du kayak, grimper et chercher dans un camp antarctique." }
+    ],
+    "de": [
+      { "id": "curiosity_01", "text": "Das ist CGGallery, Antarctica: eine immersive Pinguin-Ausstellung mit Virtual Reality in Lloret de Mar." },
+      { "id": "curiosity_02", "text": "Hier besuchst du die Antarktis, ohne zu erfrieren: Pinguine, virtuelle Realität, Fotozone und Spielzeugladen." },
+      { "id": "curiosity_03", "text": "Mein Zuhause ist ein Pinguin-Erlebnis. In virtueller Realität kannst du Kajak fahren, klettern und ein Antarktis-Camp durchsuchen." }
+    ],
+    "uk": [
+      { "id": "curiosity_01", "text": "Це CGGallery, Antarctica: імерсивна виставка про пінгвінів із віртуальною реальністю у Льорет-де-Мар." },
+      { "id": "curiosity_02", "text": "Тут можна побувати в Антарктиці й не замерзнути: пінгвіни, віртуальна реальність, фотозона та магазин іграшок." },
+      { "id": "curiosity_03", "text": "Мій дім — це пінгвіняча пригода. У віртуальній реальності можна плисти на каяку, дертися по скелях і шукати в антарктичному таборі." }
+    ],
+    "sr": [
+      { "id": "curiosity_01", "text": "Ovo je CGGallery, Antarctica: imerzivna izložba o pingvinima sa virtuelnom stvarnošću u Ljoret de Maru." },
+      { "id": "curiosity_02", "text": "Ovde posećuješ Antarktik bez smrzavanja: pingvini, virtuelna stvarnost, foto-zona i prodavnica igračaka." },
+      { "id": "curiosity_03", "text": "Moj dom je iskustvo sa pingvinima. U virtuelnoj stvarnosti možeš da voziš kajak, da se penješ i istražuješ antarktički kamp." }
+    ],
+    "it": [
+      { "id": "curiosity_01", "text": "Questa è CGGallery, Antarctica: una mostra immersiva sui pinguini con realtà virtuale a Lloret de Mar." },
+      { "id": "curiosity_02", "text": "Qui visiti l’Antartide senza congelarti: pinguini, realtà virtuale, zona foto e negozio di giocattoli." },
+      { "id": "curiosity_03", "text": "Casa mia è un’esperienza tra i pinguini. In realtà virtuale puoi andare in kayak, arrampicarti e cercare in un campo antartico." }
+    ],
+    "pl": [
+      { "id": "curiosity_01", "text": "To jest CGGallery, Antarctica: immersyjna wystawa o pingwinach z wirtualną rzeczywistością w Lloret de Mar." },
+      { "id": "curiosity_02", "text": "Tutaj odwiedzasz Antarktydę bez zamarzania: pingwiny, wirtualna rzeczywistość, fotostrefa i sklep z zabawkami." },
+      { "id": "curiosity_03", "text": "Mój dom to doświadczenie z pingwinami. W wirtualnej rzeczywistości możesz pływać kajakiem, wspinać się i szukać w antarktycznym obozie." }
     ]
   }
 }

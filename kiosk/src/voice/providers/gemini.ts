@@ -1,18 +1,27 @@
-// Gemini Live adapter — implements VoiceProvider using @google/genai SDK.
-// CLAUDE.md rule: this is the ONLY file allowed to import @google/genai.
-// Model defaults to Gemini 3.1 Flash Live; override with VITE_GEMINI_MODEL.
+// ONLY file allowed to import @google/genai (CLAUDE.md rule).
 
 import { GoogleGenAI, Modality } from '@google/genai';
 import type { Session } from '@google/genai';
 import type { Language, VoiceProvider, VoiceProviderConfig, VoiceProviderEvents } from './VoiceProvider';
 import { AudioCapture } from '../../audio/AudioCapture';
 import { AudioPlayback } from '../../audio/AudioPlayback';
-import { activeLanguageInstruction, detectLanguage, lockedLanguageInstruction } from '../languageDetection';
+import {
+  LIVE_MODEL_CHAIN,
+  markLiveModelExhausted,
+  markLiveModelHealthy,
+  nextAvailableLiveModel,
+} from '../liveModelFailover';
+import {
+  activeLanguageInstruction,
+  detectLanguageDetailed,
+  lockedLanguageInstruction,
+} from '../languageDetection';
 
-const MODEL = import.meta.env.VITE_GEMINI_MODEL ?? 'gemini-3.1-flash-live-preview';
-const VOICE = 'Puck'; // playful, warm — fits Apa's personality
-const RESPONSE_TIMEOUT_MS = 15_000;
-const MAX_PENDING_AUDIO_CHUNKS = 1_000;
+const VOICE = 'Puck';
+const FIRST_AUDIO_TIMEOUT_MS = 12_000;
+const TURN_COMPLETE_TIMEOUT_MS = 45_000;
+const PLAYBACK_DRAIN_TIMEOUT_MS = 30_000;
+const MAX_BUFFERED_AUDIO_SAMPLES = 16000 * 20;
 
 function toBase64(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -21,106 +30,182 @@ function toBase64(buf: ArrayBuffer): string {
   return btoa(s);
 }
 
+function inspectPcm16(buf: ArrayBuffer): { peak: number; rms: number; samples: number } {
+  const int16 = new Int16Array(buf);
+  let peak = 0;
+  let sumSquares = 0;
+  for (let i = 0; i < int16.length; i++) {
+    const normalized = int16[i] / (int16[i] < 0 ? 0x8000 : 0x7fff);
+    const abs = Math.abs(normalized);
+    if (abs > peak) peak = abs;
+    sumSquares += normalized * normalized;
+  }
+  return {
+    peak: Number(peak.toFixed(4)),
+    rms: Number(Math.sqrt(sumSquares / Math.max(1, int16.length)).toFixed(4)),
+    samples: int16.length,
+  };
+}
+
 function buildInstructions(config: VoiceProviderConfig): string {
   if (!config.languageLock) {
     return `${config.systemPrompt}\n\n${activeLanguageInstruction(config.initialLanguage)}`;
   }
-
-  const languageGuard = lockedLanguageInstruction(config.languageLock);
-  return `${languageGuard}\n\n${config.systemPrompt}\n\n${languageGuard}`;
+  const guard = lockedLanguageInstruction(config.languageLock);
+  return `${guard}\n\n${config.systemPrompt}\n\n${guard}`;
 }
 
 export class GeminiVoiceProvider implements VoiceProvider {
   readonly name = 'Gemini Flash Live';
-  readonly model = MODEL;
+  /** Chosen per session from LIVE_MODEL_CHAIN, skipping quota-parked models. */
+  model = LIVE_MODEL_CHAIN[0];
+  readonly requiresToken = true;
 
   private session: Session | null = null;
   private capture = new AudioCapture();
   private playback = new AudioPlayback();
   private events: VoiceProviderEvents | null = null;
-  private capTimeout: ReturnType<typeof setTimeout> | null = null;
-  private nearTimeout: ReturnType<typeof setTimeout> | null = null;
-  private responseTimeout: ReturnType<typeof setTimeout> | null = null;
+  private capTimeout:     ReturnType<typeof setTimeout> | null = null;
+  private nearTimeout:    ReturnType<typeof setTimeout> | null = null;
+  private firstAudioTimeout: ReturnType<typeof setTimeout> | null = null;
+  private turnCompleteTimeout: ReturnType<typeof setTimeout> | null = null;
+  private playbackDrainTimeout: ReturnType<typeof setTimeout> | null = null;
   private stopped = true;
-  private chunksSent = 0;
   private turnEnded = false;
-  private activityOpen = false;
-  private pendingAudioChunks: ArrayBuffer[] = [];
   private responseComplete = false;
   private language: Language = 'es';
   private languageLock: Language | null = null;
-  private heardUserTranscript = false;
   private sawResponseAudio = false;
+  private activityOpen = false;
+  private pendingAudioChunks: ArrayBuffer[] = [];
+  private pendingAudioSamples = 0;
+  private chunksCaptured = 0;
+  private chunksSent = 0;
+  private firstChunkCaptured = false;
+  private firstChunkSent = false;
+  private inputTranscriptSeen = false;
+  private outputTranscriptSeen = false;
+  private peakInputLevel = 0;
+  private silentChunks = 0;
+  private lastBufferedReportMs = 0;
 
   async start(config: VoiceProviderConfig, events: VoiceProviderEvents): Promise<void> {
-    await this.stopActiveSession();
+    await this.close('user');
     this.stopped = false;
     this.events = events;
-    this.chunksSent = 0;
     this.turnEnded = false;
-    this.activityOpen = false;
-    this.pendingAudioChunks = [];
     this.responseComplete = false;
     this.language = config.initialLanguage;
     this.languageLock = config.languageLock;
-    this.heardUserTranscript = false;
     this.sawResponseAudio = false;
+    this.activityOpen = false;
+    this.pendingAudioChunks = [];
+    this.pendingAudioSamples = 0;
+    this.chunksCaptured = 0;
+    this.chunksSent = 0;
+    this.firstChunkCaptured = false;
+    this.firstChunkSent = false;
+    this.inputTranscriptSeen = false;
+    this.outputTranscriptSeen = false;
+    this.peakInputLevel = 0;
+    this.silentChunks = 0;
+    this.lastBufferedReportMs = 0;
 
     try {
+      events.onDebug?.('provider_start_requested', {
+        language: config.initialLanguage,
+        languageLock: config.languageLock,
+      });
       await this.capture.start((pcm16) => {
         if (this.stopped || this.turnEnded) return;
-        if (!this.session || !this.activityOpen) {
-          this.queueAudioChunk(pcm16);
+        this.chunksCaptured++;
+        const stats = inspectPcm16(pcm16);
+        if (!this.firstChunkCaptured) {
+          this.firstChunkCaptured = true;
+          events.onDebug?.('provider_first_audio_chunk_captured', stats);
+        }
+        if (stats.peak > this.peakInputLevel) this.peakInputLevel = stats.peak;
+        if (stats.rms < 0.01) this.silentChunks++;
+        if (this.session && this.activityOpen) {
+          this.sendAudioChunk(pcm16);
           return;
         }
-        this.sendAudioChunk(pcm16);
-      });
+        this.queueAudioChunk(pcm16);
+      }, (event, data) => events.onDebug?.(`provider_${event}`, data));
+      events.onDebug?.('provider_capture_started');
+      events.onListening();
 
       const isEphemeralToken = config.ephemeralToken.startsWith('auth_tokens/');
       const ai = new GoogleGenAI({
         apiKey: config.ephemeralToken,
         ...(isEphemeralToken ? { httpOptions: { apiVersion: 'v1alpha' } } : {}),
       });
+      // Skip models parked by a previous quota rejection. If every model is parked
+      // we still try the primary — the cool-down may have lapsed upstream.
+      this.model = nextAvailableLiveModel() ?? LIVE_MODEL_CHAIN[0];
+      const connectStartedAt = performance.now();
+      events.onDebug?.('provider_connect_started', {
+        ephemeral: isEphemeralToken,
+        model: this.model,
+        isFallback: this.model !== LIVE_MODEL_CHAIN[0],
+      });
 
       this.session = await ai.live.connect({
-        model: MODEL,
+        model: this.model,
         config: {
           responseModalities: [Modality.AUDIO],
-          systemInstruction: {
-            parts: [{ text: buildInstructions(config) }],
-          },
-          speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } },
-          },
+          systemInstruction: { parts: [{ text: buildInstructions(config) }] },
+          speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: VOICE } } },
           inputAudioTranscription: {},
           outputAudioTranscription: {},
-          realtimeInputConfig: {
-            automaticActivityDetection: { disabled: true },
-          },
+          realtimeInputConfig: { automaticActivityDetection: { disabled: true } },
         },
         callbacks: {
           onopen: () => {
-            if (this.stopped) return;
             console.log('[gemini] open');
-            events.onDebug?.('session_open', { model: MODEL });
-            const cap = config.maxConversationSeconds;
-            this.nearTimeout = setTimeout(() => events.onTimeoutNearing(), (cap - 10) * 1000);
-            this.capTimeout  = setTimeout(() => this.close('timeout'), cap * 1000);
+            events.onDebug?.('provider_socket_open', {
+              latencyMs: Math.round(performance.now() - connectStartedAt),
+            });
           },
           onmessage: (msg) => this.handleMessage(msg),
           onerror: (e) => this.fail(new Error(String((e as ErrorEvent).message ?? e))),
           onclose: (e) => {
-            if (!this.stopped) this.close((e as CloseEvent).code === 1000 ? 'user' : 'network', false);
+            events.onDebug?.('provider_socket_closed', {
+              code: (e as CloseEvent).code,
+              reason: (e as CloseEvent).reason,
+            });
+            if (this.stopped) return;
+            const { code, reason } = e as CloseEvent;
+            // Google closes with 1011 + "You exceeded your current quota..." when the
+            // Live-model quota is exhausted. Surface it distinctly so the UI can show
+            // the "come back in a bit" screen instead of a silently resetting button.
+            if (/quota|resource_exhausted|billing/i.test(reason ?? '')) {
+              // Park this model so the next turn skips straight to the next one.
+              markLiveModelExhausted(this.model);
+              events.onDebug?.('provider_model_quota_exhausted', {
+                model: this.model,
+                next: nextAvailableLiveModel(),
+              });
+              this.close('quota', false);
+              return;
+            }
+            this.close(code === 1000 ? 'user' : 'network', false);
           },
         },
       });
 
+      if (this.stopped) return;
+
       this.session.sendRealtimeInput({ activityStart: {} });
+      events.onDebug?.('provider_activity_start_sent');
       this.activityOpen = true;
       this.flushPendingAudioChunks();
-      events.onListening();
+
+      const cap = config.maxConversationSeconds;
+      this.nearTimeout = setTimeout(() => events.onTimeoutNearing(), (cap - 10) * 1000);
+      this.capTimeout  = setTimeout(() => this.close('timeout'), cap * 1000);
     } catch (err) {
-      await this.stopActiveSession();
+      await this.close('error');
       throw err;
     }
   }
@@ -128,20 +213,32 @@ export class GeminiVoiceProvider implements VoiceProvider {
   endTurn(): void {
     if (this.turnEnded || !this.session) return;
     this.turnEnded = true;
-    console.log(`[gemini] endTurn → activityEnd (sent ${this.chunksSent} audio chunks)`);
-    this.events?.onDebug?.('end_turn', { chunksSent: this.chunksSent });
     this.capture.stop();
     this.flushPendingAudioChunks();
+    this.events?.onDebug?.('provider_end_turn', {
+      chunksCaptured: this.chunksCaptured,
+      chunksSent: this.chunksSent,
+      peakInputLevel: this.peakInputLevel,
+      silentChunks: this.silentChunks,
+    });
     if (this.chunksSent === 0) {
-      this.fail(new Error('Gemini turn ended before any audio chunks were captured'));
+      this.fail(new Error('No microphone audio was captured for this turn'));
       return;
     }
-    if (this.activityOpen) {
+    try {
       this.session.sendRealtimeInput({ activityEnd: {} });
-      this.activityOpen = false;
-    }
-    this.startResponseWatchdog();
+      this.events?.onDebug?.('provider_activity_end_sent');
+    } catch {}
     this.events?.onThinking();
+    this.startFirstAudioWatchdog();
+  }
+
+  async stop(): Promise<void> {
+    await this.close('user');
+  }
+
+  warmupAudio(): Promise<void> {
+    return this.playback.prepare();
   }
 
   private handleMessage(msg: { serverContent?: {
@@ -154,88 +251,218 @@ export class GeminiVoiceProvider implements VoiceProvider {
     if (this.stopped) return;
     const ev = this.events;
     if (!ev) return;
-
     const sc = msg.serverContent;
     if (!sc) return;
 
     if (sc.interrupted) {
+      ev.onDebug?.('provider_interrupted');
       this.playback.interrupt();
       ev.onSpeakingEnd();
       this.maybeCompleteResponse();
     }
 
-    const parts = sc.modelTurn?.parts ?? [];
-    for (const part of parts) {
+    for (const part of sc.modelTurn?.parts ?? []) {
       if (part.inlineData?.mimeType?.startsWith('audio/') && part.inlineData.data) {
         if (!this.sawResponseAudio) {
+          ev.onDebug?.('provider_first_response_audio');
+          this.clearFirstAudioWatchdog();
+          this.startTurnCompleteWatchdog();
           this.playback.startResponse(
             () => ev.onSpeakingStart(),
             () => {
               if (!sc.interrupted) ev.onSpeakingEnd();
+              if (!this.responseComplete) {
+                console.warn('[gemini] playback drained before turnComplete');
+                this.responseComplete = true;
+                this.clearTurnCompleteWatchdog();
+              }
+              this.clearPlaybackDrainWatchdog();
               this.maybeCompleteResponse();
             },
             (event, data) => ev.onDebug?.(event, data),
           );
+          this.sawResponseAudio = true;
         }
-        this.sawResponseAudio = true;
-        ev.onDebug?.('response_audio_chunk');
-        this.clearResponseWatchdog();
         this.playback.enqueuePcm(part.inlineData.data);
       }
-      if (part.text) ev.onTranscript({ role: 'ap', text: part.text });
+      if (part.text) {
+        if (!this.outputTranscriptSeen) {
+          this.outputTranscriptSeen = true;
+          ev.onDebug?.('provider_first_output_transcript');
+        }
+        ev.onTranscript({ role: 'ap', text: part.text });
+      }
     }
 
     if (sc.outputTranscription?.text) {
-      this.clearResponseWatchdog();
+      if (!this.outputTranscriptSeen) {
+        this.outputTranscriptSeen = true;
+        ev.onDebug?.('provider_first_output_transcript');
+      }
       ev.onTranscript({ role: 'ap', text: sc.outputTranscription.text });
     }
 
     if (sc.inputTranscription?.text) {
-      this.heardUserTranscript = true;
+      if (!this.inputTranscriptSeen) {
+        this.inputTranscriptSeen = true;
+        ev.onDebug?.('provider_first_input_transcript');
+      }
       ev.onTranscript({ role: 'user', text: sc.inputTranscription.text });
-      this.language = this.languageLock ?? detectLanguage(sc.inputTranscription.text, this.language);
-      ev.onLanguageDetected(this.language);
-      ev.onDebug?.('input_transcript', {
-        length: sc.inputTranscription.text.trim().length,
-        language: this.language,
+      const detected = detectLanguageDetailed(sc.inputTranscription.text, this.language);
+      this.language = this.languageLock ?? detected.language;
+      ev.onDebug?.('provider_language_detection_detail', {
+        language: detected.language,
+        confidence: detected.confidence,
       });
+      ev.onLanguageDetected(this.language);
     }
 
     if (sc.turnComplete) {
-      ev.onDebug?.('turn_complete', {
-        heardUserTranscript: this.heardUserTranscript,
-        sawResponseAudio: this.sawResponseAudio,
-        chunksSent: this.chunksSent,
-      });
-      if (!this.heardUserTranscript) {
-        this.fail(new Error('Gemini completed a turn without any user transcript'));
-        return;
-      }
+      ev.onDebug?.('provider_turn_complete');
+      // A completed turn proves this model's quota window is open again.
+      markLiveModelHealthy(this.model);
       this.responseComplete = true;
-      this.clearResponseWatchdog();
+      this.clearFirstAudioWatchdog();
+      this.clearTurnCompleteWatchdog();
       this.playback.finishResponse();
+      if (this.playback.isPlaying) this.startPlaybackDrainWatchdog();
       this.maybeCompleteResponse();
     }
   }
 
-  async stop(): Promise<void> {
-    this.close('user');
+  private maybeCompleteResponse(): void {
+    if (!this.responseComplete || this.playback.isPlaying) return;
+    this.close('complete');
   }
 
-  private async stopActiveSession(): Promise<void> {
-    if (this.stopped) return;
-    this.stopped = true;
-    this.clearTimers();
-    this.capture.stop();
-    this.playback.interrupt();
-    try { this.session?.close(); } catch {}
-    this.session = null;
-    this.events = null;
-    this.activityOpen = false;
+  private queueAudioChunk(pcm16: ArrayBuffer): void {
+    const samples = Math.floor(pcm16.byteLength / Int16Array.BYTES_PER_ELEMENT);
+    this.pendingAudioChunks.push(pcm16);
+    this.pendingAudioSamples += samples;
+    const bufferedMs = Math.round(this.pendingAudioSamples / 16000 * 1000);
+    if (bufferedMs >= this.lastBufferedReportMs + 250 || this.pendingAudioChunks.length === 1) {
+      this.lastBufferedReportMs = bufferedMs;
+      this.events?.onDebug?.('provider_audio_buffered', {
+        bufferedMs,
+        chunksBuffered: this.pendingAudioChunks.length,
+      });
+    }
+
+    while (this.pendingAudioSamples > MAX_BUFFERED_AUDIO_SAMPLES && this.pendingAudioChunks.length > 1) {
+      const dropped = this.pendingAudioChunks.shift();
+      if (dropped) {
+        this.pendingAudioSamples -= Math.floor(dropped.byteLength / Int16Array.BYTES_PER_ELEMENT);
+        this.events?.onDebug?.('provider_audio_buffer_trimmed', {
+          bufferedMs: Math.round(this.pendingAudioSamples / 16000 * 1000),
+        });
+      }
+    }
+  }
+
+  private flushPendingAudioChunks(): void {
+    if (!this.session || !this.activityOpen) return;
+    const bufferedChunks = this.pendingAudioChunks.length;
+    const bufferedMs = Math.round(this.pendingAudioSamples / 16000 * 1000);
+    for (const chunk of this.pendingAudioChunks) {
+      this.sendAudioChunk(chunk);
+    }
     this.pendingAudioChunks = [];
+    this.pendingAudioSamples = 0;
+    this.events?.onDebug?.('provider_audio_buffer_flushed', {
+      bufferedChunks,
+      bufferedMs,
+      chunksSent: this.chunksSent,
+    });
   }
 
-  private close(reason: 'user' | 'timeout' | 'error' | 'network' | 'complete', closeSocket = true): void {
+  private sendAudioChunk(pcm16: ArrayBuffer): void {
+    if (!this.session || !this.activityOpen) return;
+    this.session.sendRealtimeInput({
+      audio: { data: toBase64(pcm16), mimeType: 'audio/pcm;rate=16000' },
+    });
+    this.chunksSent++;
+    if (!this.firstChunkSent) {
+      this.firstChunkSent = true;
+      this.events?.onDebug?.('provider_first_audio_chunk_sent', { chunksSent: this.chunksSent });
+    }
+  }
+
+  private startFirstAudioWatchdog(): void {
+    this.clearFirstAudioWatchdog();
+    this.firstAudioTimeout = setTimeout(() => {
+      this.firstAudioTimeout = null;
+      // A quota-throttled Live model often does NOT close with 1011 — it transcribes
+      // the visitor correctly and then never generates a reply (verified 2026-09-03
+      // against the exhausted gemini-3.1-flash-live-preview). So an input transcript
+      // with no response audio means socket and upstream are healthy and the *model*
+      // is stalling: park it and fail over instead of surfacing a dead end.
+      if (this.inputTranscriptSeen) {
+        markLiveModelExhausted(this.model);
+        this.events?.onDebug?.('provider_model_stalled', {
+          model: this.model,
+          next: nextAvailableLiveModel(),
+        });
+        this.close('quota');
+        return;
+      }
+      this.events?.onDebug?.('provider_first_audio_timeout');
+      this.fail(new Error(`Gemini Live returned no audio within ${FIRST_AUDIO_TIMEOUT_MS / 1000}s`));
+    }, FIRST_AUDIO_TIMEOUT_MS);
+  }
+
+  private clearFirstAudioWatchdog(): void {
+    clearTimeout(this.firstAudioTimeout ?? undefined);
+    this.firstAudioTimeout = null;
+  }
+
+  private startTurnCompleteWatchdog(): void {
+    this.clearTurnCompleteWatchdog();
+    this.turnCompleteTimeout = setTimeout(() => {
+      console.warn('[gemini] forcing response complete after missing turnComplete');
+      this.turnCompleteTimeout = null;
+      this.events?.onDebug?.('provider_turn_complete_timeout');
+      this.responseComplete = true;
+      this.playback.finishResponse();
+      if (this.playback.isPlaying) this.startPlaybackDrainWatchdog();
+      this.maybeCompleteResponse();
+    }, TURN_COMPLETE_TIMEOUT_MS);
+  }
+
+  private clearTurnCompleteWatchdog(): void {
+    clearTimeout(this.turnCompleteTimeout ?? undefined);
+    this.turnCompleteTimeout = null;
+  }
+
+  private startPlaybackDrainWatchdog(): void {
+    this.clearPlaybackDrainWatchdog();
+    this.playbackDrainTimeout = setTimeout(() => {
+      console.warn('[gemini] forcing close after playback drain timeout');
+      this.playbackDrainTimeout = null;
+      this.events?.onDebug?.('provider_playback_drain_timeout');
+      this.playback.interrupt();
+      this.close('complete');
+    }, PLAYBACK_DRAIN_TIMEOUT_MS);
+  }
+
+  private clearPlaybackDrainWatchdog(): void {
+    clearTimeout(this.playbackDrainTimeout ?? undefined);
+    this.playbackDrainTimeout = null;
+  }
+
+  private clearTimers(): void {
+    clearTimeout(this.capTimeout ?? undefined);
+    clearTimeout(this.nearTimeout ?? undefined);
+    this.clearFirstAudioWatchdog();
+    this.clearTurnCompleteWatchdog();
+    this.clearPlaybackDrainWatchdog();
+    this.capTimeout = null;
+    this.nearTimeout = null;
+  }
+
+  private async close(
+    reason: 'user' | 'timeout' | 'error' | 'network' | 'quota' | 'complete',
+    closeSocket = true,
+  ): Promise<void> {
     if (this.stopped) return;
     this.stopped = true;
     this.clearTimers();
@@ -247,9 +474,17 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.session = null;
     this.activityOpen = false;
     this.pendingAudioChunks = [];
-    this.responseComplete = false;
-    this.events?.onEnd(reason);
+    this.pendingAudioSamples = 0;
+    const ev = this.events;
     this.events = null;
+    ev?.onDebug?.('provider_closed', {
+      reason,
+      chunksCaptured: this.chunksCaptured,
+      chunksSent: this.chunksSent,
+      peakInputLevel: this.peakInputLevel,
+      silentChunks: this.silentChunks,
+    });
+    ev?.onEnd(reason);
   }
 
   private fail(err: Error): void {
@@ -262,59 +497,16 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.session = null;
     this.activityOpen = false;
     this.pendingAudioChunks = [];
-    this.responseComplete = false;
-    this.events?.onError(err);
+    this.pendingAudioSamples = 0;
+    const ev = this.events;
     this.events = null;
-  }
-
-  private maybeCompleteResponse(): void {
-    if (!this.responseComplete || this.playback.isPlaying) return;
-    this.close('complete');
-  }
-
-  private queueAudioChunk(pcm16: ArrayBuffer): void {
-    this.pendingAudioChunks.push(pcm16);
-    if (this.pendingAudioChunks.length > MAX_PENDING_AUDIO_CHUNKS) {
-      this.pendingAudioChunks.shift();
-    }
-  }
-
-  private flushPendingAudioChunks(): void {
-    if (!this.session || !this.activityOpen) return;
-    for (const chunk of this.pendingAudioChunks) {
-      this.sendAudioChunk(chunk);
-    }
-    this.pendingAudioChunks = [];
-  }
-
-  private sendAudioChunk(pcm16: ArrayBuffer): void {
-    if (!this.session) return;
-    this.session.sendRealtimeInput({
-      audio: { data: toBase64(pcm16), mimeType: 'audio/pcm;rate=16000' },
+    ev?.onDebug?.('provider_failed', {
+      message: err.message,
+      chunksCaptured: this.chunksCaptured,
+      chunksSent: this.chunksSent,
+      peakInputLevel: this.peakInputLevel,
+      silentChunks: this.silentChunks,
     });
-    this.chunksSent++;
-    if (this.chunksSent === 1) {
-      this.events?.onDebug?.('first_audio_chunk_sent');
-    }
-  }
-
-  private startResponseWatchdog(): void {
-    this.clearResponseWatchdog();
-    this.responseTimeout = setTimeout(() => {
-      this.fail(new Error(`Gemini Live did not return audio within ${RESPONSE_TIMEOUT_MS / 1000}s`));
-    }, RESPONSE_TIMEOUT_MS);
-  }
-
-  private clearResponseWatchdog(): void {
-    clearTimeout(this.responseTimeout ?? undefined);
-    this.responseTimeout = null;
-  }
-
-  private clearTimers(): void {
-    clearTimeout(this.capTimeout ?? undefined);
-    clearTimeout(this.nearTimeout ?? undefined);
-    this.clearResponseWatchdog();
-    this.capTimeout = null;
-    this.nearTimeout = null;
+    ev?.onError(err);
   }
 }

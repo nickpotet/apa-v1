@@ -1,7 +1,18 @@
-let permissionRequest: Promise<boolean> | null = null;
+import { speechAudioConstraints } from './speechCapture';
 
-export function requestMicrophonePermission(): Promise<boolean> {
-  permissionRequest ??= requestPermission();
+let permissionRequest: Promise<boolean> | null = null;
+let permissionGranted = false;
+
+export function requestMicrophonePermission(forceRetry = false): Promise<boolean> {
+  if (permissionGranted) return Promise.resolve(true);
+  if (forceRetry) permissionRequest = null;
+
+  permissionRequest ??= requestPermission().then((granted) => {
+    permissionGranted = granted;
+    if (!granted) permissionRequest = null;
+    return granted;
+  });
+
   return permissionRequest;
 }
 
@@ -10,12 +21,7 @@ async function requestPermission(): Promise<boolean> {
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        channelCount: 1,
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      },
+      audio: speechAudioConstraints(),
     });
     stream.getTracks().forEach((track) => track.stop());
     return true;

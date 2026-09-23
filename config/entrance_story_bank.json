@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "cycle": [
+    {
+      "openingTheme": "photographic_art",
+      "bridgeTheme": "photographic_art"
+    },
+    {
+      "openingTheme": "photographer",
+      "bridgeTheme": "photographer"
+    },
+    {
+      "openingTheme": "expedition_story",
+      "bridgeTheme": "expedition_film"
+    },
+    {
+      "openingTheme": "installation",
+      "bridgeTheme": "installation"
+    },
+    {
+      "openingTheme": "penguin",
+      "bridgeTheme": "virtual_reality"
+    }
+  ],
+  "openingThemes": {
+    "photographic_art": {
+      "label": "Antarctic photographic art",
+      "facts": [
+        "The exhibition is an immersive photographic journey through Antarctica, built with photographs, light, and a room-by-room emotional sequence.",
+        "The work Purple Dawn can look almost three-dimensional, but its unusual color comes from real Antarctic light rather than computer graphics.",
+        "The Sun and Ice triptych uses three photographs together to turn Antarctic light and ice into one visual story."
+      ]
+    },
+    "photographer": {
+      "label": "photographer Sergey Potetyunin",
+      "facts": [
+        "Sergey Potetyunin is the photographer, author, and traveller behind the exhibition.",
+        "After a spinal injury and years of pain, Sergey rebuilt his life through yoga and martial arts before travelling to the Himalayas and Antarctica.",
+        "Describe Sergey's talent through patience, composition, natural light, and emotional observation; never use unsupported rankings or superlatives."
+      ]
+    },
+    "expedition_story": {
+      "label": "Antarctic expedition story",
+      "facts": [
+        "The Antarctic expedition began in February 2024 in Ushuaia and continued across the Drake Passage.",
+        "The Drake Passage is presented as a psychological border before entering another world.",
+        "The first iceberg at sunrise is the emotional moment when one world seems to end and another begins."
+      ]
+    },
+    "installation": {
+      "label": "exhibition installations",
+      "facts": [
+        "The gentoo penguin nest installation shows a father, a down-covered chick, and a mother away finding food; its theme is tenderness together with vulnerability.",
+        "A porthole installation opens onto a penguin family and a view of the bay.",
+        "The photo zone places visitors visually on board a liner near Antarctica."
+      ]
+    },
+    "penguin": {
+      "label": "penguins",
+      "facts": [
+        "Choose exactly one unused fact from the official penguin fact bank."
+      ]
+    }
+  },
+  "bridgeThemes": {
+    "photographic_art": {
+      "label": "photographic art",
+      "instruction": "Make one soft bridge to the photographic art. Use Purple Dawn, Sun and Ice, real Antarctic light, composition, or the exhibition's emotional photographic journey. Do not mention tickets, the shop, or virtual reality unless the visitor asks."
+    },
+    "photographer": {
+      "label": "photographer Sergey Potetyunin",
+      "instruction": "Make one soft bridge to Sergey Potetyunin and his photography. Show his talent through patience, composition, natural light, expedition experience, or emotional observation. Do not use unsupported superlatives and do not mention virtual reality unless the visitor asks."
+    },
+    "expedition_film": {
+      "label": "expedition film",
+      "instruction": "Make one soft bridge to the short expedition film in Hall 4. You may connect it to Ushuaia, the Drake Passage, or the first iceberg at sunrise. Do not invent the film duration and do not mention virtual reality unless the visitor asks."
+    },
+    "installation": {
+      "label": "installations",
+      "instruction": "Make one soft bridge to one installation: the gentoo nest family, the porthole with a penguin family, or the photo zone on a liner. Focus on the visual or emotional experience. Do not mention virtual reality unless the visitor asks."
+    },
+    "virtual_reality": {
+      "label": "virtual reality",
+      "instruction": "Make one soft bridge to virtual reality. On the first mention, explain briefly that the visitor puts on a headset and enters an Antarctic scene. Say the full localized name for virtual reality and never abbreviate it. You may mention the kayak, climbing, or camp search experience; standard admission includes one episode."
+    }
+  }
+}

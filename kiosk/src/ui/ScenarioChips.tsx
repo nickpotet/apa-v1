@@ -21,7 +21,7 @@ export function ScenarioChips({ lang, disabled = false, onChipTap }: Props) {
           key={id}
           disabled={disabled}
           onClick={() => onChipTap(id)}
-          className="rounded-2xl border border-white/10 bg-white/5 px-2 py-3.5 text-sm font-medium text-white/75 transition-colors hover:bg-white/10 active:bg-white/15 disabled:opacity-30"
+          className="rounded-2xl border border-white/15 bg-[#050d1a]/60 px-2 py-3.5 text-sm font-medium text-white/85 shadow-[0_2px_12px_rgba(0,0,0,0.25)] backdrop-blur-md transition-colors hover:bg-[#050d1a]/75 hover:border-white/25 active:bg-[#050d1a]/80 disabled:opacity-30"
         >
           {chips[i]}
         </button>

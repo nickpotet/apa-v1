@@ -1,4 +1,5 @@
-const STATUS_INTERVAL_FRAMES = 24_000;
+// Streams PCM16 chunks from the main thread. Starts playback once an initial
+// buffer is filled, then drains until "finish" is sent.
 
 class PlaybackProcessor extends AudioWorkletProcessor {
   constructor() {
@@ -10,8 +11,7 @@ class PlaybackProcessor extends AudioWorkletProcessor {
     this.started = false;
     this.finishing = false;
     this.underrunCount = 0;
-    this.framesSinceStatus = 0;
-
+    this.inUnderrun = false;
     this.port.onmessage = (event) => this.handleMessage(event.data);
   }
 
@@ -27,6 +27,7 @@ class PlaybackProcessor extends AudioWorkletProcessor {
         }
         if (!this.started && this.queueSamples >= this.initialBufferSamples) {
           this.started = true;
+          this.inUnderrun = false;
           this.port.postMessage({ type: 'started', bufferedSamples: this.queueSamples });
         }
         break;
@@ -34,6 +35,7 @@ class PlaybackProcessor extends AudioWorkletProcessor {
         this.finishing = true;
         if (!this.started && this.queueSamples > 0) {
           this.started = true;
+          this.inUnderrun = false;
           this.port.postMessage({ type: 'started', bufferedSamples: this.queueSamples });
         }
         if (this.queueSamples === 0) this.completeDrain();
@@ -45,7 +47,7 @@ class PlaybackProcessor extends AudioWorkletProcessor {
         this.started = false;
         this.finishing = false;
         this.underrunCount = 0;
-        this.framesSinceStatus = 0;
+        this.inUnderrun = false;
         break;
     }
   }
@@ -62,35 +64,23 @@ class PlaybackProcessor extends AudioWorkletProcessor {
     for (let i = 0; i < output.length; i++) {
       if (this.queueSamples === 0) {
         output[i] = 0;
-        if (this.finishing) {
-          this.completeDrain();
-        } else if (i === 0) {
-          this.underrunCount++;
+        if (!this.finishing && !this.inUnderrun) {
+          this.inUnderrun = true;
+          this.underrunCount += 1;
           this.port.postMessage({ type: 'underrun', underrunCount: this.underrunCount });
         }
+        if (this.finishing) this.completeDrain();
         continue;
       }
-
+      this.inUnderrun = false;
       const head = this.queue[0];
       output[i] = head[this.readIndex++];
       this.queueSamples--;
-
       if (this.readIndex >= head.length) {
         this.queue.shift();
         this.readIndex = 0;
       }
     }
-
-    this.framesSinceStatus += output.length;
-    if (this.framesSinceStatus >= STATUS_INTERVAL_FRAMES) {
-      this.framesSinceStatus = 0;
-      this.port.postMessage({
-        type: 'status',
-        bufferedSamples: this.queueSamples,
-        underrunCount: this.underrunCount,
-      });
-    }
-
     return true;
   }
 
@@ -101,7 +91,9 @@ class PlaybackProcessor extends AudioWorkletProcessor {
     this.readIndex = 0;
     this.started = false;
     this.finishing = false;
+    this.inUnderrun = false;
     this.port.postMessage({ type: 'drainComplete', underrunCount: this.underrunCount });
+    this.underrunCount = 0;
   }
 }
 

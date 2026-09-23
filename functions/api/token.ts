@@ -40,7 +40,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env }) => {
       },
     });
 
-    return json({ token: token.name, provider: 'gemini', expiresAt: expireTime });
+    return json({ token: token.name, provider: 'gemini', expiresAt: expireTime, newSessionExpireTime });
   } catch (err) {
     console.error('[pages/token]', err);
     return json({ error: 'token mint failed' }, { status: 502 });

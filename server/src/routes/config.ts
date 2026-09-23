@@ -1,15 +1,15 @@
-// Assembles and returns the full system prompt + venue config.
-// Reads /config/*.json and ap_persona.md at request time so edits take
-// effect on next git pull without a rebuild.
+// Reads config at request time — edits take effect on git pull without a rebuild.
 import { Router } from 'express';
-import { buildSystemPrompt, buildVenuePayload } from '../prompt.js';
+import { buildGuideSystemPrompt, buildSystemPrompt, buildVenuePayload, getAppVersion } from '../prompt.js';
 
 export const configRouter = Router();
 
 configRouter.get('/api/config', (_req, res) => {
   try {
     res.json({
+      appVersion: getAppVersion(),
       systemPrompt: buildSystemPrompt(),
+      guideSystemPrompt: buildGuideSystemPrompt(),
       venue: buildVenuePayload(),
     });
   } catch (err) {

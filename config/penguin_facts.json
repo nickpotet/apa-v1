@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "facts": [
+    {
+      "id": "flightless_seabirds",
+      "text": "Penguins are flightless seabirds. Their wings evolved into powerful flippers for swimming.",
+      "tags": ["anatomy", "swimming"],
+      "audience": "all",
+      "sourceTitle": "Smithsonian Ocean — Penguins",
+      "sourceUrl": "https://ocean.si.edu/ocean-life/seabirds/penguins"
+    },
+    {
+      "id": "feet_as_rudders",
+      "text": "A penguin's legs and feet sit far back on its body, which creates the famous waddle on land but helps steer like a rudder underwater.",
+      "tags": ["anatomy", "swimming"],
+      "audience": "all",
+      "sourceTitle": "Smithsonian Ocean — Penguins",
+      "sourceUrl": "https://ocean.si.edu/ocean-life/seabirds/penguins"
+    },
+    {
+      "id": "underwater_wing_strokes",
+      "text": "Penguins gain momentum underwater from both the downstroke and the upstroke of their flippers.",
+      "tags": ["anatomy", "swimming"],
+      "audience": "all",
+      "sourceTitle": "Smithsonian Ocean — Penguins",
+      "sourceUrl": "https://ocean.si.edu/ocean-life/seabirds/penguins"
+    },
+    {
+      "id": "porpoising",
+      "text": "Penguins sometimes travel by porpoising: they leap repeatedly above the surface so they can breathe without losing much speed.",
+      "tags": ["swimming", "behavior"],
+      "audience": "kids",
+      "sourceTitle": "Smithsonian Ocean — Penguins",
+      "sourceUrl": "https://ocean.si.edu/ocean-life/seabirds/penguins"
+    },
+    {
+      "id": "waterproof_feathers",
+      "text": "Penguins carefully preen their dense feathers and spread water-repelling oil over them to stay protected in the ocean.",
+      "tags": ["feathers", "adaptation"],
+      "audience": "all",
+      "sourceTitle": "Smithsonian Ocean — Penguins",
+      "sourceUrl": "https://ocean.si.edu/ocean-life/seabirds/penguins"
+    },
+    {
+      "id": "bubble_trail",
+      "text": "Penguin feathers can trap air bubbles and release them during a dive, leaving a visible bubble trail and helping reduce drag.",
+      "tags": ["feathers", "swimming"],
+      "audience": "kids",
+      "sourceTitle": "Smithsonian Ocean — Penguins",
+      "sourceUrl": "https://ocean.si.edu/ocean-life/seabirds/penguins"
+    },
+    {
+      "id": "underwater_vision",
+      "text": "Penguin eyes have adaptations that let them focus clearly underwater as well as on land.",
+      "tags": ["senses", "adaptation"],
+      "audience": "all",
+      "sourceTitle": "Smithsonian Ocean — Penguins",
+      "sourceUrl": "https://ocean.si.edu/ocean-life/seabirds/penguins"
+    },
+    {
+      "id": "southern_hemisphere",
+      "text": "Wild penguins live in the Southern Hemisphere, not around the North Pole.",
+      "tags": ["habitat", "myth"],
+      "audience": "all",
+      "sourceTitle": "Smithsonian Ocean — Penguins",
+      "sourceUrl": "https://ocean.si.edu/ocean-life/seabirds/penguins"
+    },
+    {
+      "id": "not_only_ice",
+      "text": "Not every penguin lives on ice. Some species live by deserts, temperate coasts, forests, or even near the equator.",
+      "tags": ["habitat", "myth"],
+      "audience": "all",
+      "sourceTitle": "Smithsonian Ocean — Penguins",
+      "sourceUrl": "https://ocean.si.edu/ocean-life/seabirds/penguins"
+    },
+    {
+      "id": "eighteen_species",
+      "text": "There are 18 living penguin species, each adapted to its own environment.",
+      "tags": ["species", "habitat"],
+      "audience": "all",
+      "sourceTitle": "Australian Antarctic Program — Penguins of the World",
+      "sourceUrl": "https://www.antarctica.gov.au/site/assets/files/45511/aad-penguin-poster.pdf"
+    },
+    {
+      "id": "largest_and_smallest",
+      "text": "The emperor is the largest living penguin, while the little penguin is the smallest.",
+      "tags": ["species", "comparison"],
+      "audience": "kids",
+      "sourceTitle": "Smithsonian Ocean — Penguins",
+      "sourceUrl": "https://ocean.si.edu/ocean-life/seabirds/penguins"
+    },
+    {
+      "id": "antarctic_exclusives",
+      "text": "Emperor and Adelie penguins are the only penguin species that live exclusively in Antarctica.",
+      "tags": ["species", "habitat"],
+      "audience": "all",
+      "sourceTitle": "British Antarctic Survey — Antarctic wildlife",
+      "sourceUrl": "https://www.bas.ac.uk/about/antarctica/wildlife/land-animals/"
+    },
+    {
+      "id": "emperor_winter_breeding",
+      "text": "Emperor penguins breed during the Antarctic winter, in some of the harshest conditions on Earth.",
+      "tags": ["emperor", "family", "adaptation"],
+      "audience": "all",
+      "sourceTitle": "Australian Antarctic Program — Emperor penguin",
+      "sourceUrl": "https://www.antarctica.gov.au/about-antarctica/animals/penguins/emperor-penguin/"
+    },
+    {
+      "id": "egg_on_feet",
+      "text": "A male emperor penguin keeps the pair's single egg on top of his feet under a warm fold of skin while the female goes to feed.",
+      "tags": ["emperor", "family"],
+      "audience": "all",
+      "sourceTitle": "Australian Antarctic Program — Emperor penguin breeding cycle",
+      "sourceUrl": "https://www.antarctica.gov.au/about-antarctica/animals/penguins/emperor-penguin/breeding-cycle/"
+    },
+    {
+      "id": "emperor_huddle",
+      "text": "Emperor penguins huddle close together and share body warmth to survive severe winter cold.",
+      "tags": ["emperor", "behavior", "adaptation"],
+      "audience": "all",
+      "sourceTitle": "Australian Antarctic Program — Emperor penguin",
+      "sourceUrl": "https://www.antarctica.gov.au/about-antarctica/animals/penguins/emperor-penguin/"
+    },
+    {
+      "id": "emperor_not_territorial",
+      "text": "Emperor penguins are the only penguin species that does not defend a territory.",
+      "tags": ["emperor", "behavior"],
+      "audience": "adults",
+      "sourceTitle": "Australian Antarctic Program — Emperor penguin",
+      "sourceUrl": "https://www.antarctica.gov.au/about-antarctica/animals/penguins/emperor-penguin/"
+    },
+    {
+      "id": "adelie_eye_ring",
+      "text": "Adelie penguins are easy to recognize by the white ring around each eye.",
+      "tags": ["adelie", "anatomy"],
+      "audience": "kids",
+      "sourceTitle": "Australian Antarctic Program — Adelie penguin",
+      "sourceUrl": "https://www.antarctica.gov.au/about-antarctica/animals/penguins/adelie-penguin/"
+    },
+    {
+      "id": "adelie_toboggan",
+      "text": "When snow covers the ice, Adelie penguins often slide on their bellies instead of walking.",
+      "tags": ["adelie", "behavior"],
+      "audience": "kids",
+      "sourceTitle": "Australian Antarctic Program — Adelie penguin",
+      "sourceUrl": "https://www.antarctica.gov.au/about-antarctica/animals/penguins/adelie-penguin/"
+    },
+    {
+      "id": "adelie_name",
+      "text": "The Adelie penguin was named after Adele, the wife of French explorer Jules Dumont d'Urville.",
+      "tags": ["adelie", "history"],
+      "audience": "adults",
+      "sourceTitle": "Australian Antarctic Program — Adelie penguin",
+      "sourceUrl": "https://www.antarctica.gov.au/about-antarctica/animals/penguins/adelie-penguin/"
+    },
+    {
+      "id": "penguin_diet",
+      "text": "Penguins mainly eat ocean food such as fish, krill, and squid, with the exact menu depending on the species and season.",
+      "tags": ["diet", "ocean"],
+      "audience": "all",
+      "sourceTitle": "Smithsonian Ocean — Penguins",
+      "sourceUrl": "https://ocean.si.edu/ocean-life/seabirds/penguins"
+    }
+  ]
+}

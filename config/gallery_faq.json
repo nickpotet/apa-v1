@@ -1,14 +1,17 @@
 {
-  "$comment": "Quick-lookup answers Ap can speak verbatim. Each entry is short (≤25s aloud). If an answer is missing, Ap redirects to Natalia at the front desk.",
   "venueType": {
-    "$comment": "cggalleries.com is a penguin-themed VR exhibition in Lloret de Mar — NOT an art gallery. Ap is genuinely at home here.",
     "es": "Una exposición sobre pingüinos con experiencias de Realidad Virtual.",
     "en": "A penguin exhibition with Virtual Reality experiences.",
-    "ru": "Выставка про пингвинов с VR-эпизодами.",
-    "ca": "Una exposició sobre pingüins amb experiències de Realitat Virtual."
+    "ru": "Выставка про пингвинов с эпизодами виртуальной реальности.",
+    "ca": "Una exposició sobre pingüins amb experiències de Realitat Virtual.",
+    "fr": "Une exposition sur les pingouins avec des expériences de réalité virtuelle.",
+    "de": "Eine Pinguin-Ausstellung mit Virtual-Reality-Erlebnissen.",
+    "uk": "Виставка про пінгвінів із епізодами віртуальної реальності.",
+    "sr": "Izložba o pingvinima sa iskustvima virtuelne stvarnosti.",
+    "it": "Una mostra sui pinguini con esperienze di realtà virtuale.",
+    "pl": "Wystawa o pingwinach z doświadczeniami wirtualnej rzeczywistości."
   },
   "hours": {
-    "$comment": "Two schedules: 'long' Thu–Mon (tourist days), 'short' Tue–Wed. Lunch break 14:00 → afternoon reopening. Open 7 days.",
     "schedules": {
       "long": {
         "days": ["thu", "fri", "sat", "sun", "mon"],
@@ -30,14 +33,19 @@
     "province": "Girona",
     "country": "ES",
     "directionsLandmark": {
-      "$comment": "The main town church is Església de Sant Romà — same name as the street we're on. Ap leans on that coincidence.",
       "anchor": "Església de Sant Romà",
       "distanceMeters": 50,
       "say": {
         "es": "Estamos en la calle de la iglesia de Sant Romà, a 50 metros bajando.",
         "en": "We're on the Sant Romà church's street, 50 meters down.",
         "ru": "Мы на той же улице, что и церковь Сант-Рома — 50 метров вниз.",
-        "ca": "Som al carrer de l'església de Sant Romà, a 50 metres."
+        "ca": "Som al carrer de l'església de Sant Romà, a 50 metres.",
+        "fr": "Nous sommes dans la rue de l’église Sant Romà, à 50 mètres.",
+        "de": "Wir sind in der Straße der Kirche Sant Romà, 50 Meter entfernt.",
+        "uk": "Ми на тій самій вулиці, що й церква Сант-Рома, за 50 метрів.",
+        "sr": "Nalazimo se u ulici crkve Sant Romà, udaljeni 50 metara.",
+        "it": "Siamo sulla via della chiesa di Sant Romà, a 50 metri.",
+        "pl": "Jesteśmy przy ulicy kościoła Sant Romà, 50 metrów dalej."
       }
     }
   },
@@ -45,12 +53,17 @@
     "wheelchair": {
       "entry": true,
       "restroom": false,
-      "$comment": "Honest nuance: entry is accessible, restroom is not. Ap must NOT say 'fully accessible' — say what's true.",
       "say": {
         "es": "La entrada es accesible para sillas y cochecitos. El baño existe pero no es accesible para sillas, te aviso.",
         "en": "Entry is wheelchair- and stroller-accessible. There's a restroom but it's not wheelchair-accessible, heads up.",
         "ru": "Вход доступен для колясок — и инвалидных, и детских. Туалет есть, но не для инвалидных колясок, предупреждаю.",
-        "ca": "L'entrada és accessible per a cadires i cotxets. Hi ha lavabo, però no és accessible per a cadires, t'aviso."
+        "ca": "L'entrada és accessible per a cadires i cotxets. Hi ha lavabo, però no és accessible per a cadires, t'aviso.",
+        "fr": "L’entrée est accessible aux fauteuils roulants et aux poussettes. Il y a des toilettes, mais elles ne sont pas accessibles aux fauteuils roulants.",
+        "de": "Der Eingang ist für Rollstühle und Kinderwagen zugänglich. Es gibt eine Toilette, sie ist jedoch nicht rollstuhlgerecht.",
+        "uk": "Вхід доступний для крісел колісних і дитячих візків. Туалет є, але він не пристосований для крісел колісних.",
+        "sr": "Ulaz je pristupačan za invalidska kolica i dečja kolica. Toalet postoji, ali nije pristupačan za invalidska kolica.",
+        "it": "L’ingresso è accessibile a sedie a rotelle e passeggini. C’è un bagno, ma non è accessibile alle sedie a rotelle.",
+        "pl": "Wejście jest dostępne dla wózków inwalidzkich i dziecięcych. Jest toaleta, ale nie jest dostosowana do wózków inwalidzkich."
       }
     },
     "strollers": true,
@@ -58,6 +71,22 @@
   },
   "amenities": {
     "cafe": { "exists": false },
+    "climateControl": {
+      "airConditioning": true,
+      "temperature": "cool",
+      "note": {
+        "es": "Dentro hay aire acondicionado y se mantiene fresco, como en la Antártida.",
+        "en": "The gallery is air-conditioned and kept cool, like Antarctica.",
+        "ru": "В галерее работает кондиционер, внутри прохладно, как в Антарктике.",
+        "ca": "A dins hi ha aire condicionat i s'hi està fresc, com a l'Antàrtida.",
+        "fr": "La galerie est climatisée et reste fraîche, comme en Antarctique.",
+        "de": "Die Galerie ist klimatisiert und bleibt kühl, wie in der Antarktis.",
+        "uk": "У галереї працює кондиціонер, усередині прохолодно, як в Антарктиці.",
+        "sr": "Galerija ima klima-uređaj i unutra je sveže, kao na Antarktiku.",
+        "it": "La galleria è climatizzata e resta fresca, come in Antartide.",
+        "pl": "Galeria jest klimatyzowana i panuje w niej chłód jak na Antarktydzie."
+      }
+    },
     "shop": {
       "exists": true,
       "type": "toys",
@@ -65,7 +94,13 @@
         "es": "Tienda de juguetes (pingüinos, claro).",
         "en": "Toy shop — penguins, obviously.",
         "ru": "Магазин игрушек — пингвины, конечно.",
-        "ca": "Botiga de joguines — pingüins, és clar."
+        "ca": "Botiga de joguines — pingüins, és clar.",
+        "fr": "Boutique de jouets — des pingouins, bien sûr.",
+        "de": "Spielzeugladen — natürlich mit Pinguinen.",
+        "uk": "Магазин іграшок — звісно, з пінгвінами.",
+        "sr": "Prodavnica igračaka — pingvini, naravno.",
+        "it": "Negozio di giocattoli — pinguini, naturalmente.",
+        "pl": "Sklep z zabawkami — oczywiście z pingwinami."
       }
     },
     "wifi": {
@@ -75,14 +110,20 @@
         "es": "Hay Wi-Fi — escaneas un QR a la entrada.",
         "en": "Wi-Fi available — scan the QR at the entrance.",
         "ru": "Есть Wi-Fi — QR-код на входе.",
-        "ca": "Hi ha Wi-Fi — escaneja el QR a l'entrada."
+        "ca": "Hi ha Wi-Fi — escaneja el QR a l'entrada.",
+        "fr": "Wi-Fi disponible — scanne le QR à l’entrée.",
+        "de": "WLAN verfügbar — QR-Code am Eingang scannen.",
+        "uk": "Є Wi-Fi — відскануй QR-код біля входу.",
+        "sr": "Wi-Fi je dostupan — skeniraj QR kod na ulazu.",
+        "it": "Wi-Fi disponibile — scansiona il QR all’ingresso.",
+        "pl": "Wi-Fi jest dostępne — zeskanuj kod QR przy wejściu."
       }
     }
   },
   "experiences": {
     "vr": {
       "name": "Realidad Virtual",
-      "includedWithStandardTicket": 2,
+      "includedWithStandardTicket": 1,
       "extraEpisodesPaidSeparately": true,
       "extraEpisodePrice": "Ask Natalia at the front desk.",
       "episodes": {
@@ -93,13 +134,25 @@
               "es": "Kayak antártico",
               "en": "Antarctic kayak",
               "ru": "Антарктический каяк",
-              "ca": "Caiac antàrtic"
+              "ca": "Caiac antàrtic",
+              "fr": "Kayak antarctique",
+              "de": "Antarktis-Kajak",
+              "uk": "Антарктичний каяк",
+              "sr": "Antarktički kajak",
+              "it": "Kayak antartico",
+              "pl": "Kajak antarktyczny"
             },
             "summary": {
               "es": "Vas en kayak entre pingüinos y orcas.",
               "en": "You kayak among penguins and orcas.",
               "ru": "Плывёшь на каяке среди пингвинов и косаток.",
-              "ca": "Vas en caiac entre pingüins i orques."
+              "ca": "Vas en caiac entre pingüins i orques.",
+              "fr": "Tu navigues en kayak parmi les pingouins et les orques.",
+              "de": "Du fährst mit dem Kajak zwischen Pinguinen und Orcas.",
+              "uk": "Пливеш на каяку серед пінгвінів і косаток.",
+              "sr": "Voziš kajak među pingvinima i orkama.",
+              "it": "Vai in kayak tra pinguini e orche.",
+              "pl": "Płyniesz kajakiem wśród pingwinów i orek."
             }
           },
           {
@@ -108,13 +161,25 @@
               "es": "Escalada antártica",
               "en": "Antarctic climbing",
               "ru": "Антарктическое скалолазание",
-              "ca": "Escalada antàrtica"
+              "ca": "Escalada antàrtica",
+              "fr": "Escalade antarctique",
+              "de": "Antarktis-Klettern",
+              "uk": "Антарктичне скелелазіння",
+              "sr": "Antarktičko penjanje",
+              "it": "Arrampicata antartica",
+              "pl": "Wspinaczka antarktyczna"
             },
             "summary": {
               "es": "Un episodio de escalada en hielo y roca.",
               "en": "A climbing episode on ice and rock.",
               "ru": "Эпизод со скалолазанием по льду и скалам.",
-              "ca": "Un episodi d'escalada sobre gel i roca."
+              "ca": "Un episodi d'escalada sobre gel i roca.",
+              "fr": "Un épisode d’escalade sur glace et roche.",
+              "de": "Eine Kletterepisode auf Eis und Fels.",
+              "uk": "Епізод зі скелелазінням по льоду та скелях.",
+              "sr": "Epizoda penjanja po ledu i stenama.",
+              "it": "Un episodio di arrampicata su ghiaccio e roccia.",
+              "pl": "Odcinek wspinaczkowy na lodzie i skałach."
             }
           },
           {
@@ -123,13 +188,25 @@
               "es": "Búsqueda en el campamento",
               "en": "Camp search quest",
               "ru": "Поисковый квест в лагере",
-              "ca": "Cerca al campament"
+              "ca": "Cerca al campament",
+              "fr": "Quête dans le camp",
+              "de": "Suche im Camp",
+              "uk": "Пошуковий квест у таборі",
+              "sr": "Potraga u kampu",
+              "it": "Ricerca nel campo",
+              "pl": "Misja poszukiwawcza w obozie"
             },
             "summary": {
               "es": "Un quest de búsqueda dentro de un campamento antártico.",
               "en": "A search quest inside an Antarctic camp.",
               "ru": "Поисковый квест внутри антарктического лагеря.",
-              "ca": "Un quest de cerca dins d'un campament antàrtic."
+              "ca": "Un quest de cerca dins d'un campament antàrtic.",
+              "fr": "Une quête de recherche dans un camp antarctique.",
+              "de": "Eine Suchmission in einem Antarktis-Camp.",
+              "uk": "Пошуковий квест усередині антарктичного табору.",
+              "sr": "Potraga unutar antarktičkog kampa.",
+              "it": "Una missione di ricerca in un campo antartico.",
+              "pl": "Misja poszukiwawcza w antarktycznym obozie."
             }
           }
         ],
@@ -140,13 +217,25 @@
               "es": "Machu Picchu 1",
               "en": "Machu Picchu 1",
               "ru": "Мачу-Пикчу 1",
-              "ca": "Machu Picchu 1"
+              "ca": "Machu Picchu 1",
+              "fr": "Machu Picchu 1",
+              "de": "Machu Picchu 1",
+              "uk": "Мачу-Пікчу 1",
+              "sr": "Maču Pikču 1",
+              "it": "Machu Picchu 1",
+              "pl": "Machu Picchu 1"
             },
             "summary": {
               "es": "TODO: confirm with Nick",
               "en": "TODO: confirm with Nick",
               "ru": "TODO: confirm with Nick",
-              "ca": "TODO: confirm with Nick"
+              "ca": "TODO: confirm with Nick",
+              "fr": "TODO: confirm with Nick",
+              "de": "TODO: confirm with Nick",
+              "uk": "TODO: confirm with Nick",
+              "sr": "TODO: confirm with Nick",
+              "it": "TODO: confirm with Nick",
+              "pl": "TODO: confirm with Nick"
             }
           },
           {
@@ -155,30 +244,46 @@
               "es": "Machu Picchu 2",
               "en": "Machu Picchu 2",
               "ru": "Мачу-Пикчу 2",
-              "ca": "Machu Picchu 2"
+              "ca": "Machu Picchu 2",
+              "fr": "Machu Picchu 2",
+              "de": "Machu Picchu 2",
+              "uk": "Мачу-Пікчу 2",
+              "sr": "Maču Pikču 2",
+              "it": "Machu Picchu 2",
+              "pl": "Machu Picchu 2"
             },
             "summary": {
               "es": "TODO: confirm with Nick",
               "en": "TODO: confirm with Nick",
               "ru": "TODO: confirm with Nick",
-              "ca": "TODO: confirm with Nick"
+              "ca": "TODO: confirm with Nick",
+              "fr": "TODO: confirm with Nick",
+              "de": "TODO: confirm with Nick",
+              "uk": "TODO: confirm with Nick",
+              "sr": "TODO: confirm with Nick",
+              "it": "TODO: confirm with Nick",
+              "pl": "TODO: confirm with Nick"
             }
           }
         ]
       }
     },
     "iceCubeChallenge": {
-      "$comment": "Included as a gift with the MAXI ticket. The visitor gets an actual ice cube with a random souvenir (a small trinket or piece of jewelry) frozen inside; they melt or crack it open to feel the cold and the ice — sensory, not just visual.",
       "say": {
         "es": "Te dan un cubito de hielo de verdad con un regalito dentro — algo pequeño, sorpresa. Lo derrites o lo rompes, sientes el frío. Muy nuestro.",
         "en": "They give you a real ice cube with a tiny surprise gift frozen inside. You melt it or crack it open — actual cold, actual ice. Very on-brand.",
         "ru": "Тебе дают настоящий кубик льда с маленьким сувениром внутри. Растапливаешь или разбиваешь — реальный холод, реальный лёд. Очень в нашем духе.",
-        "ca": "Et donen un cubet de gel de veritat amb una sorpresa a dins. El desfàs o el trenques — fred real, gel real. Molt nostre."
+        "ca": "Et donen un cubet de gel de veritat amb una sorpresa a dins. El desfàs o el trenques — fred real, gel real. Molt nostre.",
+        "fr": "On te donne un vrai glaçon avec une petite surprise à l’intérieur. Tu le fais fondre ou tu le casses — du vrai froid, de la vraie glace.",
+        "de": "Du bekommst einen echten Eiswürfel mit einer kleinen Überraschung darin. Du schmilzt oder knackst ihn — echte Kälte, echtes Eis.",
+        "uk": "Тобі дають справжній кубик льоду з маленьким сюрпризом усередині. Розтоплюєш або розбиваєш — справжній холод і справжній лід.",
+        "sr": "Dobijaš pravu kocku leda sa malim iznenađenjem unutra. Otopiš je ili razbiješ — prava hladnoća, pravi led.",
+        "it": "Ricevi un vero cubetto di ghiaccio con una piccola sorpresa dentro. Lo sciogli o lo rompi — freddo vero, ghiaccio vero.",
+        "pl": "Dostajesz prawdziwą kostkę lodu z małą niespodzianką w środku. Roztapiasz ją albo rozbijasz — prawdziwy chłód i prawdziwy lód."
       }
     },
     "audioTale": {
-      "title": "Cuando los pingüinos miran al cielo",
-      "$comment": "Included with the MAXI ticket. Duration not yet specified — Ap should not invent it; if asked, redirect to Natalia."
+      "title": "Cuando los pingüinos miran al cielo"
     }
   },
   "policies": {
@@ -190,7 +295,13 @@
         "es": "Foto allowed, hay zona de fotos, y si subes una story con la etiqueta te regalan un imán.",
         "en": "Photos allowed, there's a photo spot, and if you post a story tagging us they give you a magnet.",
         "ru": "Фото можно, есть фотозона, а за сторис с отметкой — магнит в подарок.",
-        "ca": "Foto permesa, hi ha una zona de fotos, i si puges una story etiquetant-nos et regalen un imant."
+        "ca": "Foto permesa, hi ha una zona de fotos, i si puges una story etiquetant-nos et regalen un imant.",
+        "fr": "Les photos sont autorisées, il y a une zone photo et une story avec notre tag donne droit à un aimant.",
+        "de": "Fotos sind erlaubt, es gibt eine Fotozone und für eine Story mit unserer Markierung erhältst du einen Magneten.",
+        "uk": "Фотографувати можна, є фотозона, а за сторіс із нашою відміткою дарують магніт.",
+        "sr": "Fotografisanje je dozvoljeno, postoji foto-zona, a za story sa našom oznakom dobijaš magnet.",
+        "it": "Le foto sono permesse, c’è una zona foto e con una story in cui ci tagghi ricevi un magnete.",
+        "pl": "Zdjęcia są dozwolone, jest fotostrefa, a za relację z naszym oznaczeniem otrzymasz magnes."
       }
     },
     "petsAllowed": "Ask Natalia at the front desk — she decides per visit.",
@@ -198,19 +309,23 @@
   },
   "staff": {
     "frontDesk": {
-      "name": "Natalia",
-      "$comment": "Real receptionist. Ap redirects out-of-config questions to her by name."
+      "name": "Natalia"
     }
   },
   "ownership": {
     "displayName": "CGGallery, Antarctica",
     "shortName": "CGGallery",
-    "$comment": "Full name 'CGGallery, Antarctica' for first introductions; 'CGGallery' for follow-ups in the same conversation. Ap can drop the 'Antarctica' tagline like a brand cue.",
     "shortPitch": {
       "es": "CGGallery, Antarctica — una experiencia inmersiva sobre pingüinos con Realidad Virtual, en pleno Lloret de Mar.",
       "en": "CGGallery, Antarctica — an immersive penguin experience with Virtual Reality, right in Lloret de Mar.",
-      "ru": "CGGallery, Antarctica — иммерсивная выставка про пингвинов с VR-эпизодами в самом центре Льорет-де-Мар.",
-      "ca": "CGGallery, Antarctica — una experiència immersiva sobre pingüins amb Realitat Virtual, al centre de Lloret de Mar."
+      "ru": "CGGallery, Antarctica — иммерсивная выставка про пингвинов с эпизодами виртуальной реальности в самом центре Льорет-де-Мар.",
+      "ca": "CGGallery, Antarctica — una experiència immersiva sobre pingüins amb Realitat Virtual, al centre de Lloret de Mar.",
+      "fr": "CGGallery, Antarctica — une expérience immersive sur les pingouins avec réalité virtuelle, au cœur de Lloret de Mar.",
+      "de": "CGGallery, Antarctica — ein immersives Pinguin-Erlebnis mit Virtual Reality mitten in Lloret de Mar.",
+      "uk": "CGGallery, Antarctica — імерсивна виставка про пінгвінів із віртуальною реальністю у самому центрі Льорет-де-Мар.",
+      "sr": "CGGallery, Antarctica — imerzivno iskustvo sa pingvinima i virtuelnom stvarnošću u centru Ljoret de Mara.",
+      "it": "CGGallery, Antarctica — un’esperienza immersiva sui pinguini con realtà virtuale nel centro di Lloret de Mar.",
+      "pl": "CGGallery, Antarctica — immersyjne doświadczenie z pingwinami i wirtualną rzeczywistością w centrum Lloret de Mar."
     }
   }
 }

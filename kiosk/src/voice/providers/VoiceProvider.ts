@@ -1,19 +1,15 @@
-// VoiceProvider — interface that any speech-to-speech engine adapter must implement.
-// CLAUDE.md rule: no OpenAI/Gemini SDK calls outside this folder.
+// No Gemini SDK calls outside this folder (CLAUDE.md rule).
 
-export type Language = 'es' | 'en' | 'ru' | 'ca';
+export type Language = 'es' | 'en' | 'ru' | 'ca' | 'fr' | 'de' | 'uk' | 'sr' | 'it' | 'pl';
 
 export interface VoiceProviderConfig {
-  /** Hard cap on a single conversation, in seconds. CLAUDE.md rule 4: 60–90 s. */
+  /** Hard cap enforced client-side. CLAUDE.md rule 4: 60–90 s. */
   maxConversationSeconds: number;
-  /** Initial UI language; the engine may switch after detecting user speech. */
   initialLanguage: Language;
-  /** When set, the visitor explicitly chose this language in the UI. */
+  /** Set when the visitor explicitly chose a language in the UI; overrides auto-detection. */
   languageLock: Language | null;
-  /** Fully resolved system prompt assembled from /config/*. */
   systemPrompt: string;
-  /** Token for the voice API. For Gemini: the actual API key (local kiosk, no cloud exposure).
-   *  For OpenAI Realtime: the ephemeral token minted by /api/token. */
+  /** Short-lived ephemeral token minted by /api/token. */
   ephemeralToken: string;
 }
 
@@ -22,23 +18,21 @@ export interface VoiceProviderEvents {
   onThinking: () => void;
   onSpeakingStart: () => void;
   onSpeakingEnd: () => void;
-  /** Anonymized — only summary fields, never raw audio. */
   onTranscript: (t: { role: 'user' | 'ap'; text: string }) => void;
   onLanguageDetected: (lang: Language) => void;
   /** Fired ~10 s before the hard cap so the UI can show a wrap-up cue. */
   onTimeoutNearing: () => void;
   onDebug?: (event: string, data?: Record<string, unknown>) => void;
   onError: (err: Error) => void;
-  onEnd: (reason: 'user' | 'timeout' | 'error' | 'network' | 'complete') => void;
+  onEnd: (reason: 'user' | 'timeout' | 'error' | 'network' | 'quota' | 'complete') => void;
 }
 
 export interface VoiceProvider {
   readonly name: string;
   readonly model: string;
-  /** Opens the session and starts streaming mic audio. Call on button-down. */
+  readonly requiresToken?: boolean;
+  warmupAudio?(): Promise<void>;
   start(config: VoiceProviderConfig, events: VoiceProviderEvents): Promise<void>;
-  /** Signals end of user speech (button-up). Stops mic, model generates response. */
   endTurn(): void;
-  /** Fully closes the session. */
   stop(): Promise<void>;
 }

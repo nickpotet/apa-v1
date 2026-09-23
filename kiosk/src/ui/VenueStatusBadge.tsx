@@ -20,7 +20,7 @@ export function VenueStatusBadge({ lang }: Props) {
   return (
     <div className="flex items-center gap-2">
       <span className={`h-2 w-2 rounded-full ${dot}`} />
-      <span className="text-sm font-medium text-white/70">{label}</span>
+      <span className="text-sm font-medium text-white/85 drop-shadow-[0_1px_4px_rgba(0,0,0,0.7)]">{label}</span>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 {
-  "$comment": "Authoritative source of prices. Ap MUST NOT quote prices outside this file. Currency EUR. Edit on the deployed kiosk via git pull; no rebuild needed.",
   "currency": "EUR",
-  "lastUpdated": "2026-05-14",
+  "lastUpdated": "2026-06-30",
   "tickets": {
     "general": {
       "price": 12.00,
@@ -9,13 +8,25 @@
         "es": "General",
         "en": "General",
         "ru": "Общий",
-        "ca": "General"
+        "ca": "General",
+        "fr": "Général",
+        "de": "Allgemein",
+        "uk": "Звичайний",
+        "sr": "Standardna",
+        "it": "Intero",
+        "pl": "Normalny"
       },
       "description": {
-        "es": "Adultos y niños a partir de 12 años. Incluye entrada + 2 episodios de Realidad Virtual.",
-        "en": "Adults and kids 12+. Includes entry + 2 VR episodes.",
-        "ru": "Взрослые и дети от 12 лет. Вход + 2 эпизода VR.",
-        "ca": "Adults i nens a partir de 12 anys. Inclou entrada + 2 episodis de Realitat Virtual."
+        "es": "Adultos y niños a partir de 12 años. Incluye entrada + 1 episodio de Realidad Virtual.",
+        "en": "Adults and kids 12+. Includes entry + 1 virtual reality episode.",
+        "ru": "Взрослые и дети от 12 лет. Вход + 1 эпизод виртуальной реальности.",
+        "ca": "Adults i nens a partir de 12 anys. Inclou entrada + 1 episodi de Realitat Virtual.",
+        "fr": "Adultes et enfants à partir de 12 ans. Entrée + 1 épisode de réalité virtuelle inclus.",
+        "de": "Erwachsene und Kinder ab 12 Jahren. Eintritt + 1 Episode in virtueller Realität inklusive.",
+        "uk": "Дорослі та діти від 12 років. Вхід + 1 епізод віртуальної реальності.",
+        "sr": "Odrasli i deca od 12 godina. Ulaz + 1 epizoda virtuelne stvarnosti.",
+        "it": "Adulti e ragazzi dai 12 anni. Ingresso + 1 episodio di realtà virtuale.",
+        "pl": "Dorośli i dzieci od 12 lat. Wstęp + 1 odcinek wirtualnej rzeczywistości."
       }
     },
     "reduced": {
@@ -24,13 +35,25 @@
         "es": "Reducida",
         "en": "Reduced",
         "ru": "Льготный",
-        "ca": "Reduïda"
+        "ca": "Reduïda",
+        "fr": "Réduit",
+        "de": "Ermäßigt",
+        "uk": "Пільговий",
+        "sr": "Snižena",
+        "it": "Ridotto",
+        "pl": "Ulgowy"
       },
       "description": {
-        "es": "Niños 5–12, mayores de 65 años y personas con discapacidad. Incluye entrada + 2 episodios de VR.",
-        "en": "Kids 5–12, seniors 65+, and people with disabilities. Includes entry + 2 VR episodes.",
-        "ru": "Дети 5–12 лет, старше 65 и люди с инвалидностью. Вход + 2 эпизода VR.",
-        "ca": "Nens 5–12, majors de 65 anys i persones amb discapacitat. Inclou entrada + 2 episodis de VR."
+        "es": "Niños 5–12, mayores de 65 años y personas con discapacidad. Incluye entrada + 1 episodio de realidad virtual.",
+        "en": "Kids 5–12, seniors 65+, and people with disabilities. Includes entry + 1 virtual reality episode.",
+        "ru": "Дети 5–12 лет, старше 65 и люди с инвалидностью. Вход + 1 эпизод виртуальной реальности.",
+        "ca": "Nens 5–12, majors de 65 anys i persones amb discapacitat. Inclou entrada + 1 episodi de realitat virtual.",
+        "fr": "Enfants de 5 à 12 ans, plus de 65 ans et personnes handicapées. Entrée + 1 épisode de réalité virtuelle inclus.",
+        "de": "Kinder von 5 bis 12, Personen ab 65 und Menschen mit Behinderung. Eintritt + 1 Episode in virtueller Realität inklusive.",
+        "uk": "Діти 5–12 років, відвідувачі від 65 років та люди з інвалідністю. Вхід + 1 епізод віртуальної реальності.",
+        "sr": "Deca od 5 do 12 godina, osobe starije od 65 i osobe sa invaliditetom. Ulaz + 1 epizoda virtuelne stvarnosti.",
+        "it": "Bambini 5–12 anni, over 65 e persone con disabilità. Ingresso + 1 episodio di realtà virtuale.",
+        "pl": "Dzieci 5–12 lat, seniorzy 65+ i osoby z niepełnosprawnościami. Wstęp + 1 odcinek wirtualnej rzeczywistości."
       }
     },
     "maxi": {
@@ -39,28 +62,52 @@
         "es": "Maxi",
         "en": "Maxi",
         "ru": "Макси",
-        "ca": "Maxi"
+        "ca": "Maxi",
+        "fr": "Maxi",
+        "de": "Maxi",
+        "uk": "Maxi",
+        "sr": "Maxi",
+        "it": "Maxi",
+        "pl": "Maxi"
       },
       "description": {
-        "es": "Entrada + 5 episodios de VR + regalo del Ice Cube Challenge + cuento en audio «Cuando los pingüinos miran al cielo».",
-        "en": "Entry + 5 VR episodes + Ice Cube Challenge gift + audio tale 'When the penguins look at the sky'.",
-        "ru": "Вход + 5 эпизодов VR + подарок Ice Cube Challenge + аудиосказка «Когда пингвины смотрят в небо».",
-        "ca": "Entrada + 5 episodis de VR + regal de l'Ice Cube Challenge + conte en àudio «Quan els pingüins miren el cel»."
+        "es": "Entrada + 5 episodios de realidad virtual + regalo del Ice Cube Challenge + cuento en audio «Cuando los pingüinos miran al cielo».",
+        "en": "Entry + 5 virtual reality episodes + Ice Cube Challenge gift + audio tale 'When the penguins look at the sky'.",
+        "ru": "Вход + 5 эпизодов виртуальной реальности + подарок Ice Cube Challenge + аудиосказка «Когда пингвины смотрят в небо».",
+        "ca": "Entrada + 5 episodis de realitat virtual + regal de l'Ice Cube Challenge + conte en àudio «Quan els pingüins miren el cel».",
+        "fr": "Entrée + 5 épisodes de réalité virtuelle + cadeau Ice Cube Challenge + conte audio «Quand les pingouins regardent le ciel».",
+        "de": "Eintritt + 5 Episoden in virtueller Realität + Ice Cube Challenge-Geschenk + Audiogeschichte „Wenn die Pinguine zum Himmel schauen“.",
+        "uk": "Вхід + 5 епізодів віртуальної реальності + подарунок Ice Cube Challenge + аудіоказка «Коли пінгвіни дивляться на небо».",
+        "sr": "Ulaz + 5 epizoda virtuelne stvarnosti + poklon Ice Cube Challenge + audio-priča „Kada pingvini gledaju u nebo“.",
+        "it": "Ingresso + 5 episodi di realtà virtuale + regalo Ice Cube Challenge + racconto audio «Quando i pinguini guardano il cielo».",
+        "pl": "Wstęp + 5 odcinków wirtualnej rzeczywistości + prezent Ice Cube Challenge + opowieść audio „Kiedy pingwiny patrzą w niebo”."
       }
     },
     "family": {
-      "price": 32.00,
+      "price": 35.00,
       "label": {
         "es": "Familiar",
         "en": "Family",
         "ru": "Семейный",
-        "ca": "Familiar"
+        "ca": "Familiar",
+        "fr": "Famille",
+        "de": "Familie",
+        "uk": "Сімейний",
+        "sr": "Porodična",
+        "it": "Famiglia",
+        "pl": "Rodzinny"
       },
       "description": {
-        "es": "2 adultos + 2 niños. Incluye entrada + 2 episodios de VR por persona.",
-        "en": "2 adults + 2 kids. Includes entry + 2 VR episodes per person.",
-        "ru": "2 взрослых + 2 ребёнка. Вход + 2 эпизода VR на каждого.",
-        "ca": "2 adults + 2 nens. Inclou entrada + 2 episodis de VR per persona."
+        "es": "2 adultos + 2 niños. Incluye entrada + 1 episodio de realidad virtual por persona.",
+        "en": "2 adults + 2 kids. Includes entry + 1 virtual reality episode per person.",
+        "ru": "2 взрослых + 2 ребёнка. Вход + 1 эпизод виртуальной реальности на каждого.",
+        "ca": "2 adults + 2 nens. Inclou entrada + 1 episodi de realitat virtual per persona.",
+        "fr": "2 adultes + 2 enfants. Entrée + 1 épisode de réalité virtuelle par personne.",
+        "de": "2 Erwachsene + 2 Kinder. Eintritt + 1 Episode in virtueller Realität pro Person.",
+        "uk": "2 дорослих + 2 дітей. Вхід + 1 епізод віртуальної реальності на кожного.",
+        "sr": "2 odrasle osobe + 2 deteta. Ulaz + 1 epizoda virtuelne stvarnosti po osobi.",
+        "it": "2 adulti + 2 bambini. Ingresso + 1 episodio di realtà virtuale a persona.",
+        "pl": "2 dorosłych + 2 dzieci. Wstęp + 1 odcinek wirtualnej rzeczywistości na osobę."
       }
     },
     "babies": {
@@ -69,18 +116,29 @@
         "es": "Bebés",
         "en": "Babies",
         "ru": "Малыши",
-        "ca": "Nadons"
+        "ca": "Nadons",
+        "fr": "Petits enfants",
+        "de": "Kleinkinder",
+        "uk": "Малюки",
+        "sr": "Mala deca",
+        "it": "Bambini piccoli",
+        "pl": "Dzieci do 5 lat"
       },
       "description": {
         "es": "Niños hasta 5 años — entrada gratuita.",
         "en": "Kids under 5 — free entry.",
         "ru": "Дети до 5 лет — бесплатно.",
-        "ca": "Nens fins a 5 anys — entrada gratuïta."
+        "ca": "Nens fins a 5 anys — entrada gratuïta.",
+        "fr": "Enfants de moins de 5 ans — entrée gratuite.",
+        "de": "Kinder unter 5 Jahren — Eintritt frei.",
+        "uk": "Діти до 5 років — безкоштовно.",
+        "sr": "Deca mlađa od 5 godina — besplatan ulaz.",
+        "it": "Bambini sotto i 5 anni — ingresso gratuito.",
+        "pl": "Dzieci poniżej 5 lat — wstęp bezpłatny."
       }
     }
   },
   "rewards": {
-    "$comment": "The REAL conversion mechanic. Ap mentions this near the end of a conversation, soft, not pushy. Replaces the imaginary 'PINGÜINO' coupon from the v0 draft.",
     "magnetForStoryOrReview": {
       "trigger": "Instagram story tagging the venue OR a public review",
       "benefit": "Free magnet of your choice from the selection at the front desk",
@@ -88,19 +146,30 @@
         "es": "Y oye — si subes una story etiquetándonos o dejas una reseña, te regalan un imán a elegir. Pequeño detalle, gran imán.",
         "en": "Oh — if you post a story tagging us or leave a review, they give you a magnet to choose. Tiny gesture, big magnet.",
         "ru": "А ещё — выложишь сторис с отметкой или оставишь отзыв — дарят магнит на выбор. Мелочь, а приятно.",
-        "ca": "Ah — i si puges una story etiquetant-nos o deixes una ressenya, et regalen un imant a triar. Detall petit, imant gran."
+        "ca": "Ah — i si puges una story etiquetant-nos o deixes una ressenya, et regalen un imant a triar. Detall petit, imant gran.",
+        "fr": "Si tu publies une story en nous identifiant ou laisses un avis, tu peux choisir un aimant offert. Petit geste, grand aimant.",
+        "de": "Wenn du eine Story mit Markierung postest oder eine Bewertung hinterlässt, darfst du dir einen Magneten aussuchen. Kleine Geste, großer Magnet.",
+        "uk": "Якщо опублікуєш сторіс із нашою відміткою або залишиш відгук, отримаєш магніт на вибір. Маленький жест, великий магніт.",
+        "sr": "Ako objaviš story sa našom oznakom ili ostaviš recenziju, dobijaš magnet po izboru. Mali gest, veliki magnet.",
+        "it": "Se pubblichi una story taggandoci o lasci una recensione, puoi scegliere un magnete in regalo. Piccolo gesto, grande magnete.",
+        "pl": "Jeśli opublikujesz relację z naszym oznaczeniem lub zostawisz opinię, otrzymasz wybrany magnes. Mały gest, wielki magnes."
       }
     }
   },
   "vrUpsell": {
-    "$comment": "Standard admission includes 2 VR episodes. Remaining episodes are paid separately; only Natalia can quote the current price.",
-    "includedEpisodesOnStandardTickets": 2,
+    "includedEpisodesOnStandardTickets": 1,
     "extraEpisodesPaidSeparately": true,
     "extraEpisodePrice": {
-      "es": "El precio del VR extra te lo dice Natalia.",
-      "en": "Natalia will tell you the price for extra VR.",
-      "ru": "Цену на дополнительный VR скажет Наталия.",
-      "ca": "La Natalia et dirà el preu del VR extra."
+      "es": "El precio de la realidad virtual adicional te lo dice Natalia.",
+      "en": "Natalia will tell you the price for extra virtual reality.",
+      "ru": "Цену на дополнительный эпизод виртуальной реальности скажет Наталия.",
+      "ca": "La Natalia et dirà el preu de la realitat virtual addicional.",
+      "fr": "Natalia te donnera le prix de la réalité virtuelle supplémentaire.",
+      "de": "Natalia nennt dir den Preis für zusätzliche Episoden in virtueller Realität.",
+      "uk": "Ціну додаткового епізоду віртуальної реальності підкаже Наталія.",
+      "sr": "Natalia će ti reći cenu dodatne epizode virtuelne stvarnosti.",
+      "it": "Natalia ti dirà il prezzo della realtà virtuale aggiuntiva.",
+      "pl": "Natalia poda cenę dodatkowych odcinków wirtualnej rzeczywistości."
     }
   }
 }

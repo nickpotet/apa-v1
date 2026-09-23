@@ -1,151 +1,210 @@
+import { useEffect, useRef, useCallback } from 'react';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { Language } from '../voice/providers/VoiceProvider';
 import type { KioskState } from '../types';
 
+// KioskState → animation clip name in GLB
+const STATE_ANIM: Record<KioskState, string> = {
+  idle:      'idle',
+  preparing: 'thinking',
+  listening: 'listening',
+  thinking:  'thinking',
+  speaking:  'speaking',
+  excited:   'excited',
+  sleeping:  'sleeping',
+  error:     'idle',
+  capped:    'sleeping',
+  offline:   'idle',
+};
+
+// Glow ring per state (applied to wrapper div)
 const RING: Record<KioskState, string> = {
-  idle:      'ring-white/10 shadow-[0_0_70px_rgba(125,211,252,0.14)]',
-  preparing: 'ring-sky-400/40 shadow-[0_0_80px_rgba(56,189,248,0.18)]',
-  listening: 'ring-sky-400/70 shadow-[0_0_90px_rgba(56,189,248,0.30)]',
-  thinking:  'ring-amber-400/70 shadow-[0_0_90px_rgba(251,191,36,0.24)]',
-  speaking:  'ring-emerald-400/70 shadow-[0_0_90px_rgba(52,211,153,0.28)]',
-  excited:   'ring-yellow-300/80 shadow-[0_0_100px_rgba(250,204,21,0.34)]',
-  sleeping:  'ring-white/5 shadow-[0_0_50px_rgba(255,255,255,0.08)] opacity-70',
-  error:     'ring-red-500/70 shadow-[0_0_85px_rgba(239,68,68,0.26)]',
-  capped:    'ring-white/5 shadow-[0_0_50px_rgba(255,255,255,0.08)] opacity-75',
-  offline:   'ring-red-500/40 shadow-[0_0_70px_rgba(239,68,68,0.18)] opacity-75',
+  idle:      'shadow-[0_0_70px_rgba(125,211,252,0.14)]',
+  preparing: 'shadow-[0_0_80px_rgba(56,189,248,0.20)]',
+  listening: 'shadow-[0_0_90px_rgba(56,189,248,0.32)]',
+  thinking:  'shadow-[0_0_90px_rgba(251,191,36,0.26)]',
+  speaking:  'shadow-[0_0_90px_rgba(52,211,153,0.30)]',
+  excited:   'shadow-[0_0_100px_rgba(250,204,21,0.36)]',
+  sleeping:  'shadow-[0_0_50px_rgba(255,255,255,0.08)] opacity-70',
+  error:     'shadow-[0_0_85px_rgba(239,68,68,0.28)]',
+  capped:    'shadow-[0_0_50px_rgba(255,255,255,0.08)] opacity-75',
+  offline:   'shadow-[0_0_70px_rgba(239,68,68,0.18)] opacity-75',
 };
 
-const ACCENT: Record<Language, string> = {
-  es: '#ef4444',
-  en: '#38bdf8',
-  ru: '#a78bfa',
-  ca: '#facc15',
-};
-
-const EYE: Record<KioskState, { left: string; right: string }> = {
-  idle:      { left: 'M93 118c0 5-3 9-8 9s-8-4-8-9 3-9 8-9 8 4 8 9Z', right: 'M151 118c0 5-3 9-8 9s-8-4-8-9 3-9 8-9 8 4 8 9Z' },
-  preparing: { left: 'M95 111c-2 5-6 8-11 7s-8-5-7-10c2-5 6-8 11-7s8 5 7 10Z', right: 'M153 108c1 5-2 9-7 10s-10-2-11-7 2-9 7-10 10 2 11 7Z' },
-  listening: { left: 'M95 115c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10Z', right: 'M153 115c0 6-4 10-10 10s-10-4-10-10 4-10 10-10 10 4 10 10Z' },
-  thinking:  { left: 'M95 111c-2 5-6 8-11 7s-8-5-7-10c2-5 6-8 11-7s8 5 7 10Z', right: 'M153 108c1 5-2 9-7 10s-10-2-11-7 2-9 7-10 10 2 11 7Z' },
-  speaking:  { left: 'M94 116c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9Z', right: 'M152 116c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9Z' },
-  excited:   { left: 'M85 104l6 9 10 1-8 6 3 10-9-5-9 5 2-10-8-6 10-1 3-9Z', right: 'M143 104l6 9 10 1-8 6 3 10-9-5-9 5 2-10-8-6 10-1 3-9Z' },
-  sleeping:  { left: 'M76 118c7 6 14 6 21 0', right: 'M134 118c7 6 14 6 21 0' },
-  error:     { left: 'M75 109l20 18M95 109l-20 18', right: 'M133 109l20 18M153 109l-20 18' },
-  capped:    { left: 'M76 118c7 6 14 6 21 0', right: 'M134 118c7 6 14 6 21 0' },
-  offline:   { left: 'M75 109l20 18M95 109l-20 18', right: 'M133 109l20 18M153 109l-20 18' },
-};
+// Loops vs plays-once
+const LOOP_ONCE = new Set(['excited']);
+const MAX_RENDER_DPR = 1.35;
+const ACTIVE_FRAME_MS = 1000 / 30;
+const HIDDEN_FRAME_MS = 1000 / 2;
 
 interface Props {
   kioskState: KioskState;
   lang: Language;
 }
 
-function stateClass(kioskState: KioskState): string {
-  if (kioskState === 'speaking') return 'apa--speaking';
-  if (kioskState === 'listening') return 'apa--listening';
-  if (kioskState === 'preparing') return 'apa--thinking';
-  if (kioskState === 'thinking') return 'apa--thinking';
-  if (kioskState === 'excited') return 'apa--excited';
-  if (kioskState === 'sleeping' || kioskState === 'capped') return 'apa--sleeping';
-  if (kioskState === 'error' || kioskState === 'offline') return 'apa--error';
-  return 'apa--idle';
-}
+export function ApaDriver({ kioskState, lang: _lang }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mixerRef = useRef<THREE.AnimationMixer | null>(null);
+  const actionsRef = useRef<Map<string, THREE.AnimationAction>>(new Map());
+  const currentRef = useRef<THREE.AnimationAction | null>(null);
+  const rafRef = useRef<number>(0);
+  const clockRef = useRef(new THREE.Clock());
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
-export function ApaDriver({ kioskState, lang }: Props) {
-  const accent = ACCENT[lang];
-  const eye = EYE[kioskState];
+  // Play a named animation with crossfade
+  const playAnim = useCallback((name: string) => {
+    const map = actionsRef.current;
+    const key = [...map.keys()].find(k => k.toLowerCase().includes(name.toLowerCase()));
+    if (!key) return;
+    const next = map.get(key)!;
+    if (currentRef.current && currentRef.current !== next) {
+      currentRef.current.fadeOut(0.3);
+    }
+    next.reset().fadeIn(0.3).play();
+    next.setLoop(
+      LOOP_ONCE.has(name) ? THREE.LoopOnce : THREE.LoopRepeat,
+      Infinity,
+    );
+    next.clampWhenFinished = LOOP_ONCE.has(name);
+    currentRef.current = next;
+  }, []);
+
+  // Boot Three.js scene once
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let disposed = false;
+    let contextReloadTimer: number | undefined;
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: true,
+      alpha: true,
+      powerPreference: 'low-power',
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_RENDER_DPR));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    rendererRef.current = renderer;
+
+    const scene = new THREE.Scene();
+
+    // Lighting (matches preview_apa.html)
+    scene.add(new THREE.AmbientLight(0xb0d8ff, 1.8));
+    const key = new THREE.DirectionalLight(0xffffff, 3.5);
+    key.position.set(2, 5, 3);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0x6eaee8, 1.0);
+    fill.position.set(-3, 2, -2);
+    scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xffd580, 0.8);
+    rim.position.set(0, 3, -4);
+    scene.add(rim);
+
+    // Camera
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.01, 100);
+    camera.position.set(0, 1.15, 3.0);
+    camera.lookAt(0, 1.15, 0);
+
+    // Resize
+    const resize = () => {
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_RENDER_DPR));
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    };
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
+    resize();
+
+    // Load GLB
+    const loader = new GLTFLoader();
+    loader.load('/Apa_kiosk_animated.glb', (gltf) => {
+      if (disposed) return;
+      const model = gltf.scene;
+
+      // Auto-scale and floor at y=0
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const scale = 1.8 / Math.max(size.x, size.y, size.z);
+      model.scale.setScalar(scale);
+      model.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
+
+      scene.add(model);
+
+      if (gltf.animations.length) {
+        const mixer = new THREE.AnimationMixer(model);
+        mixerRef.current = mixer;
+        for (const clip of gltf.animations) {
+          actionsRef.current.set(clip.name, mixer.clipAction(clip));
+        }
+        playAnim(STATE_ANIM[kioskState] ?? 'idle');
+      }
+    });
+
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      console.warn('[apa-driver] WebGL context lost; reloading kiosk view');
+      contextReloadTimer = window.setTimeout(() => window.location.reload(), 1500);
+    };
+    const handleContextRestored = () => {
+      console.warn('[apa-driver] WebGL context restored; reloading kiosk view');
+      window.location.reload();
+    };
+    canvas.addEventListener('webglcontextlost', handleContextLost, false);
+    canvas.addEventListener('webglcontextrestored', handleContextRestored, false);
+
+    // Render loop
+    let lastFrameAt = 0;
+    const animate = (now = 0) => {
+      rafRef.current = requestAnimationFrame(animate);
+      const targetFrameMs = document.visibilityState === 'hidden' ? HIDDEN_FRAME_MS : ACTIVE_FRAME_MS;
+      if (now - lastFrameAt < targetFrameMs) return;
+      lastFrameAt = now;
+      mixerRef.current?.update(Math.min(clockRef.current.getDelta(), 1 / 24));
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(rafRef.current);
+      clearTimeout(contextReloadTimer);
+      canvas.removeEventListener('webglcontextlost', handleContextLost);
+      canvas.removeEventListener('webglcontextrestored', handleContextRestored);
+      ro.disconnect();
+      actionsRef.current.clear();
+      mixerRef.current = null;
+      currentRef.current = null;
+      renderer.dispose();
+      rendererRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Sync animation to kioskState
+  useEffect(() => {
+    if (actionsRef.current.size === 0) return; // not loaded yet
+    playAnim(STATE_ANIM[kioskState] ?? 'idle');
+  }, [kioskState, playAnim]);
 
   return (
-    <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden">
-      <div className="apa-ground-shadow absolute bottom-6 h-10 w-44 rounded-full bg-sky-300/10" />
+    <div className="relative h-full w-full">
+      {/* Ground shadow */}
       <div
-        className={[
-          'apa-stage relative flex aspect-square w-[min(76vw,28rem)] items-center justify-center rounded-full bg-white/[0.045] ring-2 transition-all duration-500',
-          RING[kioskState],
-          stateClass(kioskState),
-        ].join(' ')}
-      >
-        <div className="apa-float relative h-[82%] w-[82%]">
-          <svg viewBox="0 0 240 280" className="h-full w-full overflow-visible" role="img" aria-label="Apa">
-            <defs>
-              <radialGradient id="apaBelly" cx="50%" cy="42%" r="58%">
-                <stop offset="0%" stopColor="#ffffff" />
-                <stop offset="66%" stopColor="#edf7ff" />
-                <stop offset="100%" stopColor="#cfe7f4" />
-              </radialGradient>
-              <linearGradient id="apaBody" x1="44" x2="198" y1="31" y2="248" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stopColor="#263244" />
-                <stop offset="58%" stopColor="#111827" />
-                <stop offset="100%" stopColor="#07111f" />
-              </linearGradient>
-            </defs>
-
-            <ellipse className="apa-shadow" cx="120" cy="251" rx="62" ry="13" fill="#020617" opacity="0.42" />
-
-            <g className="apa-body">
-              <path d="M53 147c0-70 29-116 67-116s67 46 67 116c0 69-28 111-67 111s-67-42-67-111Z" fill="url(#apaBody)" />
-              <path d="M73 157c0-48 20-82 47-82s47 34 47 82c0 50-20 83-47 83s-47-33-47-83Z" fill="url(#apaBelly)" />
-              <path d="M72 86c8-34 26-55 48-55s40 21 48 55c-12-13-29-21-48-21s-36 8-48 21Z" fill="#334155" opacity="0.78" />
-
-              <g className="apa-flipper apa-flipper-left">
-                <path d="M58 139c-28 15-43 41-39 69 26-5 46-25 58-61Z" fill="#111827" />
-                <path d="M35 193c15-8 26-21 34-38" fill="none" stroke="#334155" strokeWidth="4" strokeLinecap="round" opacity="0.55" />
-              </g>
-              <g className="apa-flipper apa-flipper-right">
-                <path d="M182 139c28 15 43 41 39 69-26-5-46-25-58-61Z" fill="#111827" />
-                <path d="M205 193c-15-8-26-21-34-38" fill="none" stroke="#334155" strokeWidth="4" strokeLinecap="round" opacity="0.55" />
-              </g>
-
-              <path d="M82 90c7-17 22-27 38-27s31 10 38 27c-8 13-22 21-38 21s-30-8-38-21Z" fill="#f8fafc" opacity="0.94" />
-
-              <g className="apa-eyes">
-                {kioskState === 'sleeping' || kioskState === 'capped' ? (
-                  <>
-                    <path d={eye.left} fill="none" stroke="#0f172a" strokeWidth="5" strokeLinecap="round" />
-                    <path d={eye.right} fill="none" stroke="#0f172a" strokeWidth="5" strokeLinecap="round" />
-                  </>
-                ) : kioskState === 'error' || kioskState === 'offline' ? (
-                  <>
-                    <path d={eye.left} fill="none" stroke="#0f172a" strokeWidth="5" strokeLinecap="round" />
-                    <path d={eye.right} fill="none" stroke="#0f172a" strokeWidth="5" strokeLinecap="round" />
-                  </>
-                ) : (
-                  <>
-                    <path className="apa-eye" d={eye.left} fill="#0f172a" />
-                    <path className="apa-eye" d={eye.right} fill="#0f172a" />
-                    <circle className="apa-eye-glint" cx="88" cy="113" r="2.3" fill="#fff" opacity="0.9" />
-                    <circle className="apa-eye-glint" cx="146" cy="113" r="2.3" fill="#fff" opacity="0.9" />
-                  </>
-                )}
-              </g>
-
-              <g className="apa-beak">
-                <path d="M104 132c9-8 23-8 32 0l-16 12Z" fill="#f59e0b" />
-                <path className="apa-beak-lower" d="M104 134c10 10 22 10 32 0l-16 15Z" fill="#fb923c" />
-              </g>
-
-              <g className="apa-scarf">
-                <path d="M79 164c24 11 58 11 82 0" fill="none" stroke={accent} strokeWidth="13" strokeLinecap="round" />
-                <path d="M145 168c10 12 13 25 10 39" fill="none" stroke={accent} strokeWidth="12" strokeLinecap="round" />
-                <circle cx="159" cy="212" r="6" fill={accent} />
-              </g>
-
-              <g className="apa-feet">
-                <path d="M76 245c13-10 29-10 43 0-11 11-30 12-43 0Z" fill="#f59e0b" />
-                <path d="M121 245c14-10 30-10 43 0-12 12-31 12-43 0Z" fill="#f59e0b" />
-              </g>
-            </g>
-
-            <g className="apa-bubbles" fill="none" stroke={accent} strokeWidth="4" strokeLinecap="round" opacity="0.85">
-              <path d="M197 67c9 0 16 7 16 16" />
-              <path d="M202 49c18 2 31 15 33 33" opacity="0.45" />
-            </g>
-
-            <g className="apa-sleep" fill="#c7d2fe" opacity="0">
-              <text x="169" y="69" fontSize="22" fontWeight="800">Z</text>
-              <text x="190" y="46" fontSize="16" fontWeight="800">Z</text>
-            </g>
-          </svg>
-        </div>
+        className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[30%]"
+        style={{
+          width: '70%',
+          height: '12%',
+          background: 'radial-gradient(ellipse, rgba(0,20,60,0.38) 0%, transparent 70%)',
+          filter: 'blur(4px)',
+        }}
+      />
+      <div className={`relative w-full h-full rounded-full transition-shadow duration-700 ${RING[kioskState]}`}>
+        <canvas ref={canvasRef} className="w-full h-full" />
       </div>
     </div>
   );

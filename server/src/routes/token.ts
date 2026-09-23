@@ -1,6 +1,3 @@
-// Returns the voice-API token to the kiosk frontend.
-// Checks the daily $-cap before issuing; returns { capped: true } when hit.
-// Set VOICE_PROVIDER=openai in .env to mint OpenAI ephemeral tokens instead.
 import { Router } from 'express';
 import { isCapHit, getDailyUsage } from '../db.js';
 
@@ -27,7 +24,7 @@ tokenRouter.post('/api/token', async (_req, res) => {
       const r = await fetch('https://api.openai.com/v1/realtime/sessions', {
         method: 'POST',
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'gpt-realtime', voice: 'verse' }),
+        body: JSON.stringify({ model: 'gpt-4o-realtime-preview-2024-12-17', voice: 'verse' }),
       });
       if (!r.ok) throw new Error(`OpenAI sessions ${r.status}`);
       const data = await r.json() as { client_secret: { value: string } };
@@ -39,7 +36,7 @@ tokenRouter.post('/api/token', async (_req, res) => {
     return;
   }
 
-  // Default: Gemini — return API key directly (local device, key never leaves LAN)
+  // Gemini key returned directly — local device only, never leaves LAN.
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
     res.status(503).json({ error: 'GEMINI_API_KEY not configured on server' });

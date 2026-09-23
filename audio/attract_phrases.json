@@ -31,5 +31,45 @@
     { "id": "04_adventure", "text": "L'aventura comença aquí mateix." },
     { "id": "05_cool",      "text": "Vine, et mostraré alguna cosa guai." },
     { "id": "06_headset",   "text": "Entra i posa't unes ulleres de realitat virtual!" }
+  ],
+  "fr": [
+    { "id": "01_psst",      "text": "Psst ! Hé, par ici !" },
+    { "id": "02_hello",     "text": "Bonjour, je suis Apa. Tu veux voir mon monde ?" },
+    { "id": "03_penguins",  "text": "Tu savais qu'ici, tu peux voir des pingouins ?" },
+    { "id": "04_adventure", "text": "L'aventure commence ici." },
+    { "id": "05_cool",      "text": "Viens, je vais te montrer quelque chose de sympa." },
+    { "id": "06_headset",   "text": "Entre et essaie un casque de réalité virtuelle !" }
+  ],
+  "de": [
+    { "id": "01_psst",      "text": "Psst! Hey, hier drüben!" },
+    { "id": "02_hello",     "text": "Hallo, ich bin Apa. Willst du meine Welt sehen?" },
+    { "id": "03_penguins",  "text": "Wusstest du, dass du hier drinnen Pinguine sehen kannst?" },
+    { "id": "04_adventure", "text": "Das Abenteuer beginnt genau hier." },
+    { "id": "05_cool",      "text": "Komm, ich zeige dir etwas Cooles." },
+    { "id": "06_headset",   "text": "Komm herein und probiere eine VR-Brille aus!" }
+  ],
+  "uk": [
+    { "id": "01_psst",      "text": "Пс-с! Гей, я тут!" },
+    { "id": "02_hello",     "text": "Привіт, я Апа. Хочеш побачити мій світ?" },
+    { "id": "03_penguins",  "text": "Ти знав, що тут усередині можна побачити пінгвінів?" },
+    { "id": "04_adventure", "text": "Пригода починається просто тут." },
+    { "id": "05_cool",      "text": "Заходь, я покажу дещо цікаве." },
+    { "id": "06_headset",   "text": "Заходь і спробуй шолом віртуальної реальності!" }
+  ],
+  "sr": [
+    { "id": "01_psst",      "text": "Psst! Hej, ovde sam!" },
+    { "id": "02_hello",     "text": "Zdravo, ja sam Apa. Želiš li da vidiš moj svet?" },
+    { "id": "03_penguins",  "text": "Da li znaš da ovde unutra možeš da vidiš pingvine?" },
+    { "id": "04_adventure", "text": "Avantura počinje upravo ovde." },
+    { "id": "05_cool",      "text": "Uđi, pokazaću ti nešto zanimljivo." },
+    { "id": "06_headset",   "text": "Uđi i isprobaj naočare za virtuelnu stvarnost!" }
+  ],
+  "it": [
+    { "id": "01_psst",      "text": "Psst! Ehi, sono qui!" },
+    { "id": "02_hello",     "text": "Ciao, sono Apa. Vuoi vedere il mio mondo?" },
+    { "id": "03_penguins",  "text": "Sapevi che qui dentro puoi vedere i pinguini?" },
+    { "id": "04_adventure", "text": "L’avventura comincia proprio qui." },
+    { "id": "05_cool",      "text": "Entra, ti mostro qualcosa di bello." },
+    { "id": "06_headset",   "text": "Entra e prova un visore di realtà virtuale!" }
   ]
 }

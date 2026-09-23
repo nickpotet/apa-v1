@@ -1,16 +1,21 @@
 {
-  "$comment": "Six sales scenarios Ap is tuned for. Each has multilingual hooks and a pivot. Used both as in-context examples for the LLM and as button-prompts on the kiosk. All hooks lean on the real product: VR episodes + photo zone + toy shop. Reward mechanic: free magnet for an Instagram story (tagged) OR a public review — mentioned soft, near the end.",
   "scenarios": [
     {
       "id": "family",
       "trigger": "visitor with kids / arrived with kids / asks if it's family-friendly",
       "hook": {
-        "es": "¡Buf, qué bien! Tenemos un episodio de VR donde tu peque se siente como un pingüino bebé. Risa garantizada.",
-        "en": "Oh perfect — there's a VR episode where your kid feels like a baby penguin. Giggles guaranteed.",
-        "ru": "О, идеально — есть VR-эпизод, где ребёнок чувствует себя пингвинёнком. Смех гарантирован.",
-        "ca": "Que bé! Hi ha un episodi de VR on el petit se sent com un pingüí bebè. Riures assegurats."
+        "es": "¡Buf, qué bien! Tenemos un episodio de realidad virtual donde tu peque se siente como un pingüino bebé. Risa garantizada.",
+        "en": "Oh perfect — there's a virtual reality episode where your kid feels like a baby penguin. Giggles guaranteed.",
+        "ru": "О, идеально — есть эпизод виртуальной реальности, где ребёнок чувствует себя пингвинёнком. Смех гарантирован.",
+        "ca": "Que bé! Hi ha un episodi de realitat virtual on el petit se sent com un pingüí bebè. Riures assegurats.",
+        "fr": "Parfait ! Il y a un épisode de réalité virtuelle où votre enfant se sent comme un bébé pingouin. Rires garantis.",
+        "de": "Perfekt! Es gibt eine Episode in virtueller Realität, in der sich dein Kind wie ein Pinguinküken fühlt. Lachen garantiert.",
+        "uk": "Чудово! Є епізод віртуальної реальності, у якому дитина відчуває себе маленьким пінгвіном. Сміх гарантовано.",
+        "sr": "Odlično! Postoji epizoda virtuelne stvarnosti u kojoj se dete oseća kao mali pingvin. Smeh je zagarantovan.",
+        "it": "Perfetto! C’è un episodio di realtà virtuale in cui il bambino si sente un piccolo pinguino. Risate garantite.",
+        "pl": "Idealnie! Jest odcinek wirtualnej rzeczywistości, w którym dziecko czuje się jak mały pingwin. Śmiech gwarantowany."
       },
-      "pivot": "kid-friendly VR episode → Familiar ticket if 2+2, mention free entry for under 5"
+      "pivot": "kid-friendly virtual reality episode → Familiar ticket if 2+2, mention free entry for under 5"
     },
     {
       "id": "couple",
@@ -18,8 +23,14 @@
       "hook": {
         "es": "Mira, dos personas, dos gafas, una hora absurda. Funciona muy bien en pareja, te aviso.",
         "en": "Two people, two headsets, one absurd hour. Works really well as a couple, just warning you.",
-        "ru": "Двое, два VR-шлема, час сказки. С парами заходит отлично, предупреждаю.",
-        "ca": "Dues persones, dues ulleres, una hora absurda. Va molt bé en parella, t'aviso."
+        "ru": "Двое, два шлема виртуальной реальности, час сказки. С парами заходит отлично, предупреждаю.",
+        "ca": "Dues persones, dues ulleres, una hora absurda. Va molt bé en parella, t'aviso.",
+        "fr": "Deux personnes, deux casques, une heure délicieusement absurde. Ça marche très bien en couple.",
+        "de": "Zwei Personen, zwei Headsets, eine herrlich verrückte Stunde. Funktioniert sehr gut als Paar.",
+        "uk": "Двоє людей, два шоломи, одна дивовижна година. Для пари працює чудово.",
+        "sr": "Dvoje ljudi, dve naočare za virtuelnu stvarnost, jedan neobičan sat. Odlično funkcioniše za parove.",
+        "it": "Due persone, due visori, un’ora deliziosamente assurda. Funziona benissimo in coppia.",
+        "pl": "Dwie osoby, dwa gogle i jedna cudownie niezwykła godzina. Świetnie sprawdza się dla par."
       },
       "pivot": "Maxi ticket (5 episodes + Ice Cube + audio tale) as the date-night package"
     },
@@ -30,7 +41,13 @@
         "es": "¡Foto allowed! Y dentro hay una zona de fotos que es como un anuncio. Sube la story con la etiqueta y te regalan un imán.",
         "en": "Photos allowed! There's a photo spot inside that looks like a commercial. Post the story tagging us and they give you a magnet.",
         "ru": "Фото можно! Внутри есть фотозона как из рекламы. Выложишь сторис с отметкой — подарят магнит.",
-        "ca": "Foto allowed! A dins hi ha una zona de fotos com d'anunci. Puja la story etiquetant-nos i et regalen un imant."
+        "ca": "Foto allowed! A dins hi ha una zona de fotos com d'anunci. Puja la story etiquetant-nos i et regalen un imant.",
+        "fr": "Les photos sont permises ! À l’intérieur, la zone photo ressemble à une publicité. Une story avec notre tag et tu reçois un aimant.",
+        "de": "Fotos sind erlaubt! Drinnen gibt es eine Fotozone wie aus der Werbung. Markiere uns in einer Story und du bekommst einen Magneten.",
+        "uk": "Фото дозволені! Усередині є фотозона, наче з реклами. Відміть нас у сторіс і отримай магніт.",
+        "sr": "Fotografisanje je dozvoljeno! Unutra je foto-zona kao iz reklame. Označi nas u storyju i dobićeš magnet.",
+        "it": "Le foto sono permesse! Dentro c’è una zona foto da pubblicità. Taggaci in una story e ricevi un magnete.",
+        "pl": "Zdjęcia są dozwolone! W środku jest fotostrefa jak z reklamy. Oznacz nas w relacji, a dostaniesz magnes."
       },
       "pivot": "photo zone → magnet reward → general or maxi ticket"
     },
@@ -41,7 +58,13 @@
         "es": "Hay una tienda dentro con pingüinos de peluche que parecen reales. Natalia te enseña los favoritos.",
         "en": "There's a toy shop inside with stuffed penguins that look real. Natalia will point out the favorites.",
         "ru": "Внутри есть магазин с пингвинами-плюшками, как живые. Наталья покажет любимчиков.",
-        "ca": "Hi ha una botiga a dins amb pingüins de peluix que semblen reals. La Natalia t'ensenya els seus preferits."
+        "ca": "Hi ha una botiga a dins amb pingüins de peluix que semblen reals. La Natalia t'ensenya els seus preferits.",
+        "fr": "Il y a une boutique avec des pingouins en peluche presque réels. Natalia te montrera ses préférés.",
+        "de": "Drinnen gibt es einen Laden mit Plüschpinguinen, die fast echt aussehen. Natalia zeigt dir ihre Favoriten.",
+        "uk": "Усередині є магазин із плюшевими пінгвінами, майже як справжніми. Наталія покаже улюбленців.",
+        "sr": "Unutra je prodavnica sa plišanim pingvinima koji izgledaju skoro stvarno. Natalia će ti pokazati favorite.",
+        "it": "Dentro c’è un negozio con pinguini di peluche quasi veri. Natalia ti mostrerà i preferiti.",
+        "pl": "W środku jest sklep z pluszowymi pingwinami, które wyglądają prawie jak żywe. Natalia pokaże ci ulubione."
       },
       "pivot": "toy shop → Natalia at front desk → general ticket if they want to see exhibit too"
     },
@@ -49,10 +72,16 @@
       "id": "howMuch",
       "trigger": "visitor asks 'how much' / 'is it expensive' / hesitating about price",
       "hook": {
-        "es": "Entrada general son 12 euros, niños menores de 5 gratis, y el familiar 2+2 son 32 — sale a cuenta. ¿Quieres que te lo explique Natalia?",
-        "en": "General is 12 euros, kids under 5 free, the family 2+2 is 32 — works out cheap. Want Natalia to break it down?",
-        "ru": "Взрослый — 12 евро, до 5 лет бесплатно, семейный 2+2 — 32 евро, очень выгодно. Хочешь, Наталья расскажет подробнее?",
-        "ca": "L'entrada general són 12 euros, nens menors de 5 gratis, i la familiar 2+2 són 32 — surt a compte. Vols que t'ho expliqui la Natalia?"
+        "es": "Entrada general son 12 euros, niños menores de 5 gratis, y el familiar 2+2 son 35 — sale a cuenta. ¿Quieres que te lo explique Natalia?",
+        "en": "General is 12 euros, kids under 5 free, the family 2+2 is 35 — works out cheap. Want Natalia to break it down?",
+        "ru": "Взрослый — 12 евро, до 5 лет бесплатно, семейный 2+2 — 35 евро, очень выгодно. Хочешь, Наталья расскажет подробнее?",
+        "ca": "L'entrada general són 12 euros, nens menors de 5 gratis, i la familiar 2+2 són 35 — surt a compte. Vols que t'ho expliqui la Natalia?",
+        "fr": "L’entrée générale coûte 12 euros, les moins de 5 ans entrent gratuitement et le billet famille 2+2 coûte 35 euros. Natalia peut tout expliquer.",
+        "de": "Der normale Eintritt kostet 12 Euro, Kinder unter 5 sind frei und das Familienticket 2+2 kostet 35 Euro. Natalia erklärt dir gern alles.",
+        "uk": "Звичайний квиток коштує 12 євро, дітям до 5 років безкоштовно, а сімейний 2+2 — 35 євро. Наталія все пояснить.",
+        "sr": "Standardna karta košta 12 evra, deca mlađa od 5 ulaze besplatno, a porodična karta 2+2 košta 35 evra. Natalia može sve da objasni.",
+        "it": "L’ingresso generale costa 12 euro, sotto i 5 anni è gratuito e il biglietto famiglia 2+2 costa 35 euro. Natalia può spiegarti tutto.",
+        "pl": "Bilet normalny kosztuje 12 euro, dzieci poniżej 5 lat wchodzą bezpłatnie, a bilet rodzinny 2+2 kosztuje 35 euro. Natalia wszystko wyjaśni."
       },
       "pivot": "quote real prices from pricing.json, redirect to Natalia for any nuance"
     },
@@ -60,10 +89,16 @@
       "id": "curiosity",
       "trigger": "visitor just stopped to look / asks 'what is this'",
       "hook": {
-        "es": "Soy un pingüino que vive aquí. Esto de fuera es solo el cartel — dentro tenemos VR, una zona de fotos y una historia bastante rara. ¿Entras?",
-        "en": "I'm a penguin who lives here. Out here is just the sign — inside there's VR, a photo spot, and a pretty weird story. Coming in?",
-        "ru": "Я пингвин, я тут живу. Снаружи только вывеска — внутри VR, фотозона и довольно странная история. Заходишь?",
-        "ca": "Sóc un pingüí que viu aquí. Aquí fora és només el cartell — a dins hi ha VR, una zona de fotos i una història ben rara. Entres?"
+        "es": "Soy un pingüino que vive aquí. Esto de fuera es solo el cartel — dentro tenemos realidad virtual, una zona de fotos y una historia bastante rara. ¿Entras?",
+        "en": "I'm a penguin who lives here. Out here is just the sign — inside there's virtual reality, a photo spot, and a pretty weird story. Coming in?",
+        "ru": "Я пингвин, я тут живу. Снаружи только вывеска — внутри виртуальная реальность, фотозона и довольно странная история. Заходишь?",
+        "ca": "Sóc un pingüí que viu aquí. Aquí fora és només el cartell — a dins hi ha realitat virtual, una zona de fotos i una història ben rara. Entres?",
+        "fr": "Je suis un pingouin qui vit ici. Dehors, ce n’est que l’affiche : à l’intérieur, il y a la réalité virtuelle, une zone photo et une histoire assez étrange. Tu entres ?",
+        "de": "Ich bin ein Pinguin und wohne hier. Draußen ist nur das Schild — drinnen gibt es virtuelle Realität, eine Fotozone und eine ziemlich seltsame Geschichte. Kommst du rein?",
+        "uk": "Я пінгвін і живу тут. Зовні лише вивіска, а всередині — віртуальна реальність, фотозона й доволі дивна історія. Заходиш?",
+        "sr": "Ja sam pingvin i živim ovde. Napolju je samo znak — unutra je virtuelna stvarnost, foto-zona i prilično neobična priča. Ulaziš?",
+        "it": "Sono un pinguino e vivo qui. Fuori c’è solo l’insegna — dentro trovi realtà virtuale, una zona foto e una storia piuttosto strana. Entri?",
+        "pl": "Jestem pingwinem i mieszkam tutaj. Na zewnątrz jest tylko szyld, a w środku wirtualna rzeczywistość, fotostrefa i dość niezwykła historia. Wchodzisz?"
       },
       "pivot": "the hook IS the redirect — point at the door"
     }

@@ -9,212 +9,283 @@
   transform: translateZ(0);
 }
 
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+
 .apa-body {
-  transform-origin: 120px 150px;
-  animation: apa-breathe 5.8s ease-in-out infinite;
+  transform-origin: 120px 230px;
+  animation: apa-breathe 3.8s ease-in-out infinite;
   will-change: transform;
 }
 
-.apa-eye {
-  transform-origin: center;
-  animation: apa-blink 5.6s ease-in-out infinite;
+/* B2: blink only in states where eyes are normal (sclera+iris).
+   apa-eyes runs by default; apa-eyes--no-blink overrides to none. */
+.apa-eyes {
+  transform-origin: 120px 84px;
+  animation: apa-blink 5.4s ease-in-out infinite;
+}
+.apa-eyes--no-blink {
+  animation: none !important;
 }
 
-.apa-flipper {
+.apa-wing {
   transform-box: fill-box;
 }
-
-.apa-flipper-left {
-  transform-origin: 74% 21%;
-}
-
-.apa-flipper-right {
-  transform-origin: 26% 21%;
-}
+.apa-wing-l { transform-origin: right center; }
+.apa-wing-r { transform-origin: left center; }
 
 .apa-beak-lower {
   transform-box: fill-box;
   transform-origin: 50% 0%;
 }
 
-.apa-bubbles {
-  opacity: 0;
-  transform-origin: 205px 73px;
+.apa-tongue {
+  transition: opacity 0.1s;
 }
 
-.apa-sleep {
-  opacity: 0;
+/* ── IDLE ──────────────────────────────────────────────────────────────────── */
+
+.apa--idle .apa-body {
+  animation: apa-breathe 3.8s ease-in-out infinite;
 }
 
-.apa-ground-shadow {
-  box-shadow: 0 0 30px rgba(125, 211, 252, 0.12);
+/* A2: scarf tail sways gently in idle, independent of body breathe */
+.apa--idle .apa-scarf {
+  transform-origin: 120px 131px;
+  animation: apa-scarf-sway 7s ease-in-out infinite;
 }
+
+/* ── PREPARING ─────────────────────────────────────────────────────────────── */
+
+.apa--preparing .apa-body {
+  animation: apa-breathe 2.2s ease-in-out infinite;
+}
+
+/* ── LISTENING ─────────────────────────────────────────────────────────────── */
 
 .apa--listening .apa-body {
-  animation: apa-listen 1.8s ease-in-out infinite;
+  animation: apa-listen-tilt 2s ease-in-out infinite;
 }
 
-.apa--listening .apa-flipper-left {
-  animation: apa-left-flipper-listen 1.8s ease-in-out infinite;
+/* A1: eyebrows rise slightly in sync with head tilt */
+.apa--listening .apa-brows {
+  transform-origin: 120px 64px;
+  animation: apa-brow-listen 2s ease-in-out infinite;
 }
 
-.apa--listening .apa-flipper-right {
-  animation: apa-right-flipper-listen 1.8s ease-in-out infinite;
+.apa--listening .apa-listen-waves {
+  animation: apa-wave-pulse 1.15s ease-in-out infinite;
 }
+
+/* ── THINKING ──────────────────────────────────────────────────────────────── */
 
 .apa--thinking .apa-float {
   animation: apa-think-float 2.6s ease-in-out infinite;
 }
 
 .apa--thinking .apa-body {
-  animation: apa-think 2.2s ease-in-out infinite;
+  animation: apa-think-sway 2.2s ease-in-out infinite;
+}
+
+/* A3: left wing tucks toward chin — classic pondering gesture */
+.apa--thinking .apa-wing-l {
+  animation: apa-wing-think-tuck 2.2s ease-in-out infinite;
 }
 
 .apa--thinking .apa-bubbles {
-  animation: apa-bubbles 1.8s ease-in-out infinite;
+  animation: apa-bubble-rise 2s ease-out infinite;
+}
+
+/* ── SPEAKING ──────────────────────────────────────────────────────────────── */
+
+.apa--speaking .apa-body {
+  animation: apa-speak-bob 0.58s ease-in-out infinite;
 }
 
 .apa--speaking .apa-beak-lower {
-  animation: apa-talk 0.22s ease-in-out infinite;
+  animation: apa-jaw 0.46s ease-in-out infinite;
 }
 
-.apa--speaking .apa-body {
-  animation: apa-speak-body 1.1s ease-in-out infinite;
+.apa--speaking .apa-tongue {
+  opacity: 0.80;
 }
 
-.apa--speaking .apa-flipper-left {
-  animation: apa-left-flipper-speak 1.4s ease-in-out infinite;
+.apa--speaking .apa-wing-l {
+  animation: apa-wing-speak-l 1.4s ease-in-out infinite;
 }
 
-.apa--speaking .apa-flipper-right {
-  animation: apa-right-flipper-speak 1.4s ease-in-out infinite;
+.apa--speaking .apa-wing-r {
+  animation: apa-wing-speak-r 1.4s ease-in-out infinite;
 }
+
+.apa--speaking .apa-speak-waves {
+  animation: apa-wave-pulse 0.75s ease-in-out infinite;
+}
+
+/* ── EXCITED ───────────────────────────────────────────────────────────────── */
 
 .apa--excited .apa-float {
-  animation: apa-excited-hop 0.74s cubic-bezier(.2, .9, .3, 1) infinite;
+  animation: apa-hop 0.74s cubic-bezier(0.2, 0.9, 0.3, 1) infinite;
 }
 
-.apa--excited .apa-flipper-left {
-  animation: apa-left-flipper-excited 0.42s ease-in-out infinite;
+.apa--excited .apa-wing-l {
+  animation: apa-wing-wave-l 0.74s ease-in-out infinite;
 }
 
-.apa--excited .apa-flipper-right {
-  animation: apa-right-flipper-excited 0.42s ease-in-out infinite;
+.apa--excited .apa-wing-r {
+  animation: apa-wing-wave-r 0.74s ease-in-out infinite;
 }
+
+.apa--excited .apa-sparkles {
+  animation: apa-sparkle-spin 1.25s linear infinite;
+  transform-origin: 183px 49px;
+}
+
+/* ── SLEEPING ──────────────────────────────────────────────────────────────── */
 
 .apa--sleeping .apa-float {
-  animation: apa-sleep-float 6.8s ease-in-out infinite;
+  animation: apa-sleep-drift 4.6s ease-in-out infinite;
 }
 
 .apa--sleeping .apa-body {
   animation: apa-sleep-breathe 5.8s ease-in-out infinite;
+  opacity: 0.82;
 }
 
-.apa--sleeping .apa-sleep {
-  animation: apa-sleep-z 2.8s ease-in-out infinite;
+.apa--sleeping .apa-zzz {
+  animation: apa-zzz-float 3.6s ease-out infinite;
 }
+
+/* ── ERROR ─────────────────────────────────────────────────────────────────── */
 
 .apa--error .apa-body {
-  animation: apa-error-shake 0.42s ease-in-out 2;
+  animation: apa-error-shake 0.44s ease-in-out 2;
 }
 
+/* ── KEYFRAMES ─────────────────────────────────────────────────────────────── */
+
 @keyframes apa-breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.018, 0.992); }
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50%      { transform: translateY(-4px) scaleY(1.013); }
 }
 
 @keyframes apa-blink {
   0%, 92%, 100% { transform: scaleY(1); }
-  95% { transform: scaleY(0.12); }
+  94%, 97%      { transform: scaleY(0.07); }
 }
 
-@keyframes apa-listen {
-  0%, 100% { transform: translateX(0) rotate(0deg) scale(1.01); }
-  50% { transform: translateX(5px) rotate(2deg) scale(1.025); }
+@keyframes apa-listen-tilt {
+  0%, 100% { transform: rotate(-5deg) translateY(0); }
+  50%      { transform: rotate(-5deg) translateY(-5px); }
 }
 
-@keyframes apa-left-flipper-listen {
-  0%, 100% { transform: rotate(-12deg); }
-  50% { transform: rotate(-23deg); }
+/* A1: brows nudge up slightly when listening */
+@keyframes apa-brow-listen {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1.5px); }
 }
 
-@keyframes apa-right-flipper-listen {
-  0%, 100% { transform: rotate(12deg); }
-  50% { transform: rotate(23deg); }
+@keyframes apa-wave-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
 }
 
 @keyframes apa-think-float {
   0%, 100% { transform: translateY(-4px); }
-  50% { transform: translateY(-12px); }
+  50%      { transform: translateY(-12px); }
 }
 
-@keyframes apa-think {
+@keyframes apa-think-sway {
   0%, 100% { transform: rotate(-2deg); }
-  50% { transform: rotate(3deg); }
+  50%      { transform: rotate(3deg); }
 }
 
-@keyframes apa-bubbles {
-  0% { opacity: 0; transform: translateY(8px) scale(0.82); }
-  28%, 72% { opacity: 0.9; }
-  100% { opacity: 0; transform: translateY(-10px) scale(1.08); }
+/* A3: left wing tucks slightly inward when thinking */
+@keyframes apa-wing-think-tuck {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(-10deg) translateY(-3px); }
 }
 
-@keyframes apa-talk {
-  0%, 100% { transform: scaleY(0.24); }
-  50% { transform: scaleY(1); }
+@keyframes apa-bubble-rise {
+  0%        { opacity: 0; transform: translateY(8px) scale(0.82); }
+  25%, 70%  { opacity: 0.9; }
+  100%      { opacity: 0; transform: translateY(-14px) scale(1.1); }
 }
 
-@keyframes apa-speak-body {
-  0%, 100% { transform: scale(1) translateY(0); }
-  50% { transform: scale(1.018) translateY(-2px); }
+@keyframes apa-speak-bob {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50%      { transform: translateY(-3px) scaleY(1.008); }
 }
 
-@keyframes apa-left-flipper-speak {
+@keyframes apa-jaw {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(6px); }
+}
+
+@keyframes apa-wing-speak-l {
   0%, 100% { transform: rotate(-4deg); }
-  50% { transform: rotate(-15deg); }
+  50%      { transform: rotate(-16deg); }
 }
 
-@keyframes apa-right-flipper-speak {
+@keyframes apa-wing-speak-r {
   0%, 100% { transform: rotate(4deg); }
-  50% { transform: rotate(15deg); }
+  50%      { transform: rotate(16deg); }
 }
 
-@keyframes apa-excited-hop {
-  0%, 100% { transform: translateY(0) scale(1); }
-  40% { transform: translateY(-22px) scale(1.03); }
-  70% { transform: translateY(2px) scale(0.99); }
+/* A2: scarf tail sways left-right in idle */
+@keyframes apa-scarf-sway {
+  0%, 100% { transform: rotate(-2deg); }
+  50%      { transform: rotate(2deg); }
 }
 
-@keyframes apa-left-flipper-excited {
-  0%, 100% { transform: rotate(-30deg); }
-  50% { transform: rotate(-58deg); }
+@keyframes apa-hop {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  20%      { transform: translateY(-16px) scale(0.96, 1.04); }
+  42%      { transform: translateY(-22px) scale(0.94, 1.06); }
+  62%      { transform: translateY(-9px) scale(0.98, 1.02); }
+  82%      { transform: translateY(-3px) scale(1.01, 0.99); }
 }
 
-@keyframes apa-right-flipper-excited {
-  0%, 100% { transform: rotate(30deg); }
-  50% { transform: rotate(58deg); }
+@keyframes apa-wing-wave-l {
+  0%, 100% { transform: rotate(-28deg); }
+  50%      { transform: rotate(-56deg) translateY(-5px); }
 }
 
-@keyframes apa-sleep-float {
-  0%, 100% { transform: translateY(0) rotate(-1deg); }
-  50% { transform: translateY(5px) rotate(1deg); }
+@keyframes apa-wing-wave-r {
+  0%, 100% { transform: rotate(28deg); }
+  50%      { transform: rotate(56deg) translateY(-5px); }
+}
+
+@keyframes apa-sparkle-spin {
+  0%   { transform: rotate(0deg) scale(1); opacity: 1; }
+  50%  { transform: rotate(180deg) scale(1.25); opacity: 0.7; }
+  100% { transform: rotate(360deg) scale(1); opacity: 1; }
+}
+
+@keyframes apa-sleep-drift {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50%      { transform: translateY(5px) rotate(1deg); }
 }
 
 @keyframes apa-sleep-breathe {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.01, 0.985); }
+  50%      { transform: scale(1.01, 0.985); }
 }
 
-@keyframes apa-sleep-z {
-  0% { transform: translateY(10px); opacity: 0; }
-  35%, 70% { opacity: 1; }
-  100% { transform: translateY(-8px); opacity: 0; }
+@keyframes apa-zzz-float {
+  0%        { opacity: 0; transform: translate(0, 0) scale(0.7); }
+  18%       { opacity: 0.9; }
+  80%       { opacity: 0.55; }
+  100%      { opacity: 0; transform: translate(-6px, -24px) scale(1.2); }
 }
 
 @keyframes apa-error-shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+  15%      { transform: translateX(-7px); }
+  30%      { transform: translateX(7px); }
+  45%      { transform: translateX(-5px); }
+  60%      { transform: translateX(5px); }
+  75%      { transform: translateX(-3px); }
+  90%      { transform: translateX(3px); }
 }
 
 @media (prefers-reduced-motion: reduce) {

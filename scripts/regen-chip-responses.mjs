@@ -1,17 +1,21 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { GoogleGenAI, Modality } from '@google/genai';
 
 const repoRoot = resolve(import.meta.dirname, '..');
-const source = resolve(repoRoot, 'config/chip_responses.json');
-const outRoot = resolve(repoRoot, 'kiosk/public/audio/chips');
-const tmpRoot = resolve(repoRoot, 'audio/_masters/chips');
+const chipSource = resolve(repoRoot, 'config/chip_responses.json');
+const chipOutRoot = resolve(repoRoot, 'kiosk/public/audio/chips');
+const tmpRoot = resolve(repoRoot, 'audio/_masters/fixed');
 const envPath = resolve(repoRoot, '.env');
 const model = process.env.GEMINI_LIVE_MODEL ?? process.env.VITE_GEMINI_MODEL ?? 'gemini-3.1-flash-live-preview';
 const voiceName = process.env.GEMINI_LIVE_VOICE ?? 'Puck';
 
-const data = JSON.parse(readFileSync(source, 'utf8'));
+const args = new Set(process.argv.slice(2));
+const force = args.has('--force');
+const scenarioFilter = process.argv.find((arg) => arg.startsWith('--scenario='))?.slice('--scenario='.length);
+const languageFilter = process.argv.find((arg) => arg.startsWith('--lang='))?.slice('--lang='.length);
+const clipFilter = process.argv.find((arg) => arg.startsWith('--clip='))?.slice('--clip='.length);
 
 function readEnvFile(path) {
   try {
@@ -96,30 +100,55 @@ async function synthesize(text) {
   return Buffer.concat(chunks);
 }
 
+async function synthesizeWithRetry(text, attempts = 3) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const pcm = await synthesize(text);
+      if (pcm.byteLength < 4_800) throw new Error(`Audio is too short: ${pcm.byteLength} bytes`);
+      return pcm;
+    } catch (error) {
+      lastError = error;
+      console.warn(`attempt ${attempt}/${attempts} failed: ${error instanceof Error ? error.message : error}`);
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, attempt * 2_000));
+    }
+  }
+  throw lastError;
+}
+
+async function renderClip(lang, clip, outRoot, group) {
+  const tmpDir = resolve(tmpRoot, group, lang);
+  const outDir = resolve(outRoot, lang);
+  mkdirSync(tmpDir, { recursive: true });
+  mkdirSync(outDir, { recursive: true });
+
+  const tmp = resolve(tmpDir, `${clip.id}.pcm`);
+  const out = resolve(outDir, `${clip.id}.mp3`);
+  if (!force && existsSync(out) && statSync(out).size > 1_000) {
+    console.log(`${group}/${lang}/${clip.id}.mp3 exists`);
+    return;
+  }
+
+  const pcm = await synthesizeWithRetry(clip.text);
+  writeFileSync(tmp, pcm);
+  run('ffmpeg', ['-y', '-loglevel', 'error', '-f', 's16le', '-ar', '24000', '-ac', '1', '-i', tmp, '-codec:a', 'libmp3lame', '-b:a', '128k', out]);
+  rmSync(tmp, { force: true });
+  if (!existsSync(out) || statSync(out).size <= 1_000) throw new Error(`Invalid output: ${out}`);
+  console.log(`${group}/${lang}/${clip.id}.mp3`);
+}
+
 readEnvFile(envPath);
-mkdirSync(outRoot, { recursive: true });
 mkdirSync(tmpRoot, { recursive: true });
 
+const data = JSON.parse(readFileSync(chipSource, 'utf8'));
 for (const [scenario, byLang] of Object.entries(data)) {
   if (scenario.startsWith('$')) continue;
-
+  if (scenarioFilter && scenario !== scenarioFilter) continue;
   for (const [lang, clips] of Object.entries(byLang)) {
-    mkdirSync(resolve(outRoot, lang), { recursive: true });
-    mkdirSync(resolve(tmpRoot, lang), { recursive: true });
-
+    if (languageFilter && lang !== languageFilter) continue;
     for (const clip of clips) {
-      const tmp = resolve(tmpRoot, lang, `${clip.id}.pcm`);
-      const out = resolve(outRoot, lang, `${clip.id}.mp3`);
-      if (existsSync(out)) {
-        console.log(`${lang}/${clip.id}.mp3 exists`);
-        continue;
-      }
-
-      const pcm = await synthesize(clip.text);
-      writeFileSync(tmp, pcm);
-      run('ffmpeg', ['-y', '-loglevel', 'error', '-f', 's16le', '-ar', '24000', '-ac', '1', '-i', tmp, '-codec:a', 'libmp3lame', '-b:a', '128k', out]);
-      rmSync(tmp, { force: true });
-      console.log(`${lang}/${clip.id}.mp3`);
+      if (clipFilter && clip.id !== clipFilter) continue;
+      await renderClip(lang, clip, chipOutRoot, 'chips');
     }
   }
 }

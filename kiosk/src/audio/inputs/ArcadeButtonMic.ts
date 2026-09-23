@@ -1,6 +1,4 @@
-// Laptop dev simulation of the physical arcade button.
-// Space bar = push-to-talk. On the real kiosk this becomes TelephoneHandset
-// or the HID-wired arcade button — just swap the adapter in App.tsx.
+// Space bar = push-to-talk dev sim. On the physical kiosk, swap for TelephoneHandset or HID arcade button in App.tsx.
 import type { InputSource, InputSourceEvents } from './InputSource';
 
 export class ArcadeButtonMic implements InputSource {
