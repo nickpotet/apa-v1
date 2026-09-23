@@ -1,5 +1,6 @@
 import { AudioCapture } from '../../audio/AudioCapture';
 import { AudioPlayback } from '../../audio/AudioPlayback';
+import { EndOfSpeechDetector } from '../../audio/endOfSpeech';
 import type { VoiceProvider, VoiceProviderConfig, VoiceProviderEvents } from './VoiceProvider';
 
 type GuideTurnResponse = {
@@ -42,15 +43,18 @@ function concatBuffers(buffers: ArrayBuffer[]): ArrayBuffer {
   return out.buffer;
 }
 
-function inspectPcm16(buffer: ArrayBuffer): { peak: number; samples: number } {
+function inspectPcm16(buffer: ArrayBuffer): { peak: number; rms: number; samples: number } {
   const data = new Int16Array(buffer);
   let peak = 0;
+  let sumSquares = 0;
   for (let i = 0; i < data.length; i++) {
     const abs = Math.abs(data[i]) / 0x7fff;
     if (abs > peak) peak = abs;
+    sumSquares += abs * abs;
   }
   return {
     peak: Number(peak.toFixed(4)),
+    rms: Math.sqrt(sumSquares / Math.max(1, data.length)),
     samples: data.length,
   };
 }
@@ -69,6 +73,7 @@ export class GuidePipelineProvider implements VoiceProvider {
   private ending = false;
   private abort: AbortController | null = null;
   private browserSpeaking = false;
+  private endOfSpeech: EndOfSpeechDetector | null = null;
 
   warmupAudio(): Promise<void> {
     return this.playback.prepare();
@@ -82,6 +87,9 @@ export class GuidePipelineProvider implements VoiceProvider {
     this.stopped = false;
     this.ending = false;
     this.abort = null;
+    // Without this, a tap-to-talk turn that never gets its second tap records
+    // without limit — this provider has no conversation cap of its own.
+    this.endOfSpeech = config.endOfSpeech ? new EndOfSpeechDetector(config.endOfSpeech) : null;
 
     events.onDebug?.('guide_pipeline_start_requested', {
       language: config.initialLanguage,
@@ -91,8 +99,14 @@ export class GuidePipelineProvider implements VoiceProvider {
     await this.capture.start((pcm16) => {
       if (this.stopped || this.ending) return;
       this.chunks.push(pcm16.slice(0));
+      const stats = inspectPcm16(pcm16);
       if (this.chunks.length === 1) {
-        events.onDebug?.('guide_pipeline_first_audio_chunk_captured', inspectPcm16(pcm16));
+        events.onDebug?.('guide_pipeline_first_audio_chunk_captured', stats);
+      }
+      const ended = this.endOfSpeech?.push(stats.rms, stats.samples / (SAMPLE_RATE / 1000));
+      if (ended) {
+        events.onDebug?.('guide_pipeline_end_of_speech', { reason: ended, ...this.endOfSpeech?.stats });
+        events.onEndOfSpeech?.(ended);
       }
     }, (event, data) => events.onDebug?.(`guide_pipeline_${event}`, data));
 

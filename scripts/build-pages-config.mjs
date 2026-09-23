@@ -232,3 +232,6 @@ writeFileSync(resolve(outDir, 'config'), JSON.stringify({
 }, null, 2));
 
 writeFileSync(resolve(outDir, 'attract-manifest'), '{}\n');
+// Tiny version probe: the kiosk polls it to reload itself after a deploy, instead
+// of re-downloading the ~48 KB config every few minutes.
+writeFileSync(resolve(outDir, 'version'), `${JSON.stringify({ appVersion })}\n`);

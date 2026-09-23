@@ -1,11 +1,12 @@
 import type { KioskState } from '../types';
 import type { Language } from '../voice/providers/VoiceProvider';
 import { UI_COPY } from '../config/venueConfig';
+import type { TalkMode } from '../audio/inputs/InputSource';
 
 interface Props {
   lang: Language;
   kioskState: KioskState;
-  onTalkStart: () => void;
+  onTalkStart: (mode: TalkMode) => void;
   onTalkEnd: () => void;
 }
 
@@ -53,12 +54,13 @@ export function TalkButton({ lang, kioskState, onTalkStart, onTalkEnd }: Props) 
           e.preventDefault();
           if (isTouch) {
             if (isRecording) onTalkEnd();
-            else if (!isBusy && !isBlocked && kioskState !== 'error') onTalkStart();
+            // Touch is tap-to-start / tap-to-stop; the app also ends it on silence.
+            else if (!isBusy && !isBlocked && kioskState !== 'error') onTalkStart('toggle');
             return;
           }
           if (isBusy || isBlocked || kioskState === 'error') return;
           e.currentTarget.setPointerCapture?.(e.pointerId);
-          onTalkStart();
+          onTalkStart('hold');
         }}
         onClick={(e) => { if (isTouchDevice) e.preventDefault(); }}
         onPointerUp={(e) => {

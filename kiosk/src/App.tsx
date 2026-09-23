@@ -8,6 +8,8 @@ import type { ScenarioId } from './ui/ScenarioChips';
 import { GeminiVoiceProvider } from './voice/providers/gemini';
 import { GuidePipelineProvider } from './voice/providers/guidePipeline';
 import { ArcadeButtonMic } from './audio/inputs/ArcadeButtonMic';
+import type { TalkMode } from './audio/inputs/InputSource';
+import { KIOSK_END_OF_SPEECH, type EndOfSpeechReason } from './audio/endOfSpeech';
 import { requestMicrophonePermission } from './audio/microphonePermission';
 import { ChipResponsePlayer } from './audio/ChipResponsePlayer';
 import { detectLanguageDetailed } from './voice/languageDetection';
@@ -17,6 +19,7 @@ import {
   liveFailoverSnapshot,
 } from './voice/liveModelFailover';
 import { APP_VERSION } from './config/appVersion';
+import { watchForNewVersion } from './config/autoUpdate';
 import {
   buildEntranceCadenceInstruction,
   claimEntranceSessionThemes,
@@ -178,7 +181,12 @@ export function App() {
   const quotaRetries     = useRef(0);
   /** Lets the quota-failover path in onEnd restart the turn without the two
    *  callbacks depending on each other. */
-  const startTalkTurnRef = useRef<(() => Promise<void>) | null>(null);
+  const startTalkTurnRef = useRef<((mode?: TalkMode) => Promise<void>) | null>(null);
+  /** How the current turn ends: releasing the button, or a second tap / silence. */
+  const talkModeRef      = useRef<TalkMode>('hold');
+  const endTalkTurnRef   = useRef<((trigger: 'button' | EndOfSpeechReason) => void) | null>(null);
+  /** Last visitor touch of any kind — auto-update never reloads under someone's nose. */
+  const lastInteractionRef = useRef(0);
   const transcriptRef    = useRef<TranscriptEntry[]>([]);
   const entranceSessionRef = useRef<EntranceSessionThemes | null>(null);
   const languageLockRef  = useRef<Language | null>(URL_LANGUAGE);
@@ -220,7 +228,6 @@ export function App() {
 
     // Pre-cache worklets so the first conversation doesn't pay a cold-fetch penalty.
     fetch('/playback-worklet.js').catch(() => {});
-    fetch('/capture-worklet.js').catch(() => {});
 
     requestMicrophonePermission();
   }, []);
@@ -383,9 +390,11 @@ export function App() {
     if (detected.language !== langRef.current) setLang(detected.language);
   }, []);
 
-  const startTalkTurn = useCallback(async () => {
+  const startTalkTurn = useCallback(async (mode: TalkMode = 'hold') => {
     if (!systemPrompt) return;
     if (turnState.current !== 'idle') return;
+    talkModeRef.current = mode;
+    lastInteractionRef.current = Date.now();
 
     const entranceSession = APP_MODE === 'kiosk'
       ? (entranceSessionRef.current ?? claimEntranceSessionThemes(window.localStorage))
@@ -468,6 +477,8 @@ export function App() {
           languageLock: languageLockRef.current,
           systemPrompt: promptParts.join('\n\n'),
           ephemeralToken: access.token,
+          // Tap-to-talk visitors rarely tap a second time; end on silence instead.
+          endOfSpeech: mode === 'toggle' ? KIOSK_END_OF_SPEECH : null,
         },
         {
           onListening:        () => {
@@ -524,6 +535,7 @@ export function App() {
             remember(t);
           },
           onTimeoutNearing: () => console.log('[voice] timeout nearing'),
+          onEndOfSpeech: (reason) => endTalkTurnRef.current?.(reason),
           onError: (e) => {
             console.error('[voice]', e);
             clearThinkingTimeout();
@@ -550,7 +562,7 @@ export function App() {
                 recordDiagnosticEvent('app', 'quota_failover_retry', {
                   attempt: quotaRetries.current,
                 });
-                void startTalkTurnRef.current?.();
+                void startTalkTurnRef.current?.(talkModeRef.current);
                 return;
               }
               // Released already — this turn is lost, but the next press uses the new
@@ -600,10 +612,13 @@ export function App() {
 
   startTalkTurnRef.current = startTalkTurn;
 
-  const finishTalkTurn = useCallback(() => {
-    recordDiagnosticEvent('input', 'button_up');
-    // The hold is over: no further quota retry may salvage this turn, and the next
-    // press starts its retry budget fresh.
+  /** Ends the listening phase — on button release / second tap, or automatically
+   *  when a tap-to-talk visitor goes quiet or hits the listening limit. */
+  const endTalkTurn = useCallback((trigger: 'button' | EndOfSpeechReason) => {
+    if (trigger === 'button') recordDiagnosticEvent('input', 'button_up');
+    else recordDiagnosticEvent('input', 'auto_end_turn', { reason: trigger });
+    // The visitor is done talking: no further quota retry may salvage this turn,
+    // and the next press starts its retry budget fresh.
     buttonHeldRef.current = false;
     quotaRetries.current = 0;
     if (turnState.current === 'idle' || turnState.current === 'ending') return;
@@ -637,6 +652,9 @@ export function App() {
     provider.endTurn();
   }, []);
 
+  endTalkTurnRef.current = endTalkTurn;
+  const finishTalkTurn = useCallback(() => endTalkTurn('button'), [endTalkTurn]);
+
   useEffect(() => {
     input.attach({
       onTalkStart: startTalkTurn,
@@ -646,7 +664,17 @@ export function App() {
     return () => { input.detach(); };
   }, [finishTalkTurn, showTransientError, startTalkTurn]);
 
+  // Unattended street kiosk: pick up new deploys by itself once nobody is using it.
+  useEffect(() => {
+    if (APP_MODE !== 'kiosk') return;
+    return watchForNewVersion(
+      () => turnState.current === 'idle' && Date.now() - lastInteractionRef.current > 60_000,
+      (from, to) => recordDiagnosticEvent('app', 'auto_update_reload', { from, to }),
+    );
+  }, []);
+
   const handleLanguageChange = useCallback((nextLanguage: Language) => {
+    lastInteractionRef.current = Date.now();
     languageLockRef.current = nextLanguage;
     updateDiagnosticTurn({ language: nextLanguage, languageLock: nextLanguage });
     recordDiagnosticEvent('app', 'language_locked', { language: nextLanguage });
@@ -654,6 +682,7 @@ export function App() {
   }, []);
 
   const handleChipTap = useCallback((id: ScenarioId) => {
+    lastInteractionRef.current = Date.now();
     if (turnState.current !== 'idle') return;
     turnState.current = 'live'; // block button presses while chip plays
     setKiosk('thinking');

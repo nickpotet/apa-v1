@@ -1,5 +1,7 @@
 // No Gemini SDK calls outside this folder (CLAUDE.md rule).
 
+import type { EndOfSpeechOptions, EndOfSpeechReason } from '../../audio/endOfSpeech';
+
 export type Language = 'es' | 'en' | 'ru' | 'ca' | 'fr' | 'de' | 'uk' | 'sr' | 'it' | 'pl';
 
 export interface VoiceProviderConfig {
@@ -11,6 +13,9 @@ export interface VoiceProviderConfig {
   systemPrompt: string;
   /** Short-lived ephemeral token minted by /api/token. */
   ephemeralToken: string;
+  /** Tap-to-talk turns only: end listening once the visitor stops talking.
+   *  Null for press-and-hold, where releasing the button ends the turn. */
+  endOfSpeech?: EndOfSpeechOptions | null;
 }
 
 export interface VoiceProviderEvents {
@@ -22,6 +27,8 @@ export interface VoiceProviderEvents {
   onLanguageDetected: (lang: Language) => void;
   /** Fired ~10 s before the hard cap so the UI can show a wrap-up cue. */
   onTimeoutNearing: () => void;
+  /** The visitor stopped talking (tap-to-talk only) — the app should end the turn. */
+  onEndOfSpeech?: (reason: EndOfSpeechReason) => void;
   onDebug?: (event: string, data?: Record<string, unknown>) => void;
   onError: (err: Error) => void;
   onEnd: (reason: 'user' | 'timeout' | 'error' | 'network' | 'quota' | 'complete') => void;

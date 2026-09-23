@@ -5,13 +5,14 @@ import { ApaDriver } from '../rive/ApaDriver';
 import { TalkButton } from './TalkButton';
 import { LanguageSelector } from './KioskScreen';
 import { ConnectionFallback } from './ConnectionFallback';
+import type { TalkMode } from '../audio/inputs/InputSource';
 
 interface Props {
   lang: Language;
   kioskState: KioskState;
   hall: string | null;
   stand: string | null;
-  onTalkStart: () => void;
+  onTalkStart: (mode?: TalkMode) => void;
   onTalkEnd: () => void;
   onLangChange: (l: Language) => void;
 }

@@ -4,9 +4,14 @@
 //   - ArcadeButtonMic (USB cardioid + 60mm button)
 // CLAUDE.md rule: no direct mic/handset/hookswitch access outside this folder.
 
+/** How the visitor ends a turn. 'hold' = releasing the button (mouse, arcade
+ *  button, handset). 'toggle' = a second tap on the touch screen — which visitors
+ *  often skip, so toggle turns also end automatically on silence. */
+export type TalkMode = 'hold' | 'toggle';
+
 export interface InputSourceEvents {
-  /** Visitor began the gesture (button down / handset off-hook). */
-  onTalkStart: () => void;
+  /** Visitor began the gesture (button down / handset off-hook). Defaults to 'hold'. */
+  onTalkStart: (mode?: TalkMode) => void;
   /** Visitor ended the gesture. */
   onTalkEnd: () => void;
   onError: (err: Error) => void;

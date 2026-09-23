@@ -5,6 +5,7 @@ import type { Session } from '@google/genai';
 import type { Language, VoiceProvider, VoiceProviderConfig, VoiceProviderEvents } from './VoiceProvider';
 import { AudioCapture } from '../../audio/AudioCapture';
 import { AudioPlayback } from '../../audio/AudioPlayback';
+import { EndOfSpeechDetector } from '../../audio/endOfSpeech';
 import {
   LIVE_MODEL_CHAIN,
   markLiveModelExhausted,
@@ -22,6 +23,8 @@ const FIRST_AUDIO_TIMEOUT_MS = 12_000;
 const TURN_COMPLETE_TIMEOUT_MS = 45_000;
 const PLAYBACK_DRAIN_TIMEOUT_MS = 30_000;
 const MAX_BUFFERED_AUDIO_SAMPLES = 16000 * 20;
+/** How long to wait for the server's setupComplete before giving up on the socket. */
+const SETUP_TIMEOUT_MS = 8_000;
 
 function toBase64(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -88,6 +91,9 @@ export class GeminiVoiceProvider implements VoiceProvider {
   private peakInputLevel = 0;
   private silentChunks = 0;
   private lastBufferedReportMs = 0;
+  private endOfSpeech: EndOfSpeechDetector | null = null;
+  private resolveSetup: (() => void) | null = null;
+  private setupDone = false;
 
   async start(config: VoiceProviderConfig, events: VoiceProviderEvents): Promise<void> {
     await this.close('user');
@@ -110,6 +116,8 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.peakInputLevel = 0;
     this.silentChunks = 0;
     this.lastBufferedReportMs = 0;
+    this.endOfSpeech = config.endOfSpeech ? new EndOfSpeechDetector(config.endOfSpeech) : null;
+    this.setupDone = false;
 
     try {
       events.onDebug?.('provider_start_requested', {
@@ -126,6 +134,13 @@ export class GeminiVoiceProvider implements VoiceProvider {
         }
         if (stats.peak > this.peakInputLevel) this.peakInputLevel = stats.peak;
         if (stats.rms < 0.01) this.silentChunks++;
+        // Tap-to-talk: tell the app when the visitor has stopped talking. Samples
+        // are already resampled to 16 kHz, so samples / 16 = milliseconds.
+        const ended = this.endOfSpeech?.push(stats.rms, stats.samples / 16);
+        if (ended) {
+          events.onDebug?.('provider_end_of_speech', { reason: ended, ...this.endOfSpeech?.stats });
+          events.onEndOfSpeech?.(ended);
+        }
         if (this.session && this.activityOpen) {
           this.sendAudioChunk(pcm16);
           return;
@@ -144,6 +159,11 @@ export class GeminiVoiceProvider implements VoiceProvider {
       // we still try the primary — the cool-down may have lapsed upstream.
       this.model = nextAvailableLiveModel() ?? LIVE_MODEL_CHAIN[0];
       const connectStartedAt = performance.now();
+      // live.connect() resolves as soon as it has *sent* the setup message — it does
+      // not wait for the server's setupComplete (verified in @google/genai 2.2.0).
+      // Realtime input sent before setupComplete breaks the protocol order; it is the
+      // leading suspect for the intermittent 1007 "Precondition check failed" closes.
+      const setupComplete = new Promise<void>((resolve) => { this.resolveSetup = resolve; });
       events.onDebug?.('provider_connect_started', {
         ephemeral: isEphemeralToken,
         model: this.model,
@@ -196,6 +216,25 @@ export class GeminiVoiceProvider implements VoiceProvider {
 
       if (this.stopped) return;
 
+      // Hold realtime input until the server confirms setup; mic audio keeps
+      // buffering meanwhile, so the visitor loses nothing.
+      let setupTimer: ReturnType<typeof setTimeout> | undefined;
+      await Promise.race([
+        setupComplete,
+        new Promise<void>((resolve) => { setupTimer = setTimeout(resolve, SETUP_TIMEOUT_MS); }),
+      ]);
+      clearTimeout(setupTimer);
+      if (this.stopped) return;
+      if (!this.setupDone) {
+        // "timed out" is classed as a connectivity error, so the UI shows the QR fallback.
+        this.fail(new Error(`Gemini Live setup timed out after ${SETUP_TIMEOUT_MS / 1000}s`));
+        return;
+      }
+      events.onDebug?.('provider_setup_complete', {
+        latencyMs: Math.round(performance.now() - connectStartedAt),
+        chunksBuffered: this.pendingAudioChunks.length,
+      });
+
       this.session.sendRealtimeInput({ activityStart: {} });
       events.onDebug?.('provider_activity_start_sent');
       this.activityOpen = true;
@@ -241,7 +280,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
     return this.playback.prepare();
   }
 
-  private handleMessage(msg: { serverContent?: {
+  private handleMessage(msg: { setupComplete?: unknown; serverContent?: {
     modelTurn?: { parts?: Array<{ inlineData?: { mimeType?: string; data?: string }; text?: string }> };
     inputTranscription?: { text?: string };
     outputTranscription?: { text?: string };
@@ -251,6 +290,11 @@ export class GeminiVoiceProvider implements VoiceProvider {
     if (this.stopped) return;
     const ev = this.events;
     if (!ev) return;
+    if (msg.setupComplete && !this.setupDone) {
+      this.setupDone = true;
+      this.resolveSetup?.();
+      this.resolveSetup = null;
+    }
     const sc = msg.serverContent;
     if (!sc) return;
 
@@ -449,6 +493,12 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.playbackDrainTimeout = null;
   }
 
+  /** Unblock start() if the socket dies before setupComplete arrives. */
+  private releaseSetupWait(): void {
+    this.resolveSetup?.();
+    this.resolveSetup = null;
+  }
+
   private clearTimers(): void {
     clearTimeout(this.capTimeout ?? undefined);
     clearTimeout(this.nearTimeout ?? undefined);
@@ -466,6 +516,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
     if (this.stopped) return;
     this.stopped = true;
     this.clearTimers();
+    this.releaseSetupWait();
     this.capture.stop();
     this.playback.interrupt();
     if (closeSocket) {
@@ -491,6 +542,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
     if (this.stopped) return;
     this.stopped = true;
     this.clearTimers();
+    this.releaseSetupWait();
     this.capture.stop();
     this.playback.interrupt();
     try { this.session?.close(); } catch {}
