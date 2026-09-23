@@ -1,8 +1,10 @@
 name: Deploy GitHub Pages
 
+# Manual only. Production is Cloudflare Pages (apa-v1.pages.dev). The GitHub Pages
+# copy is the May 2026 static demo; its demo mode (VITE_PAGES_DEMO + demo provider)
+# no longer exists in the code, so rebuilding it would replace a working demo with
+# an app that has no backend. Run this only if you mean to replace or retire it.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -26,14 +28,11 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             kiosk/package-lock.json
-            server/package-lock.json
       - run: npm ci
-      - run: npm ci --prefix server
       - run: npm ci --prefix kiosk
       - run: npm run typecheck
       - run: npm run build --prefix kiosk
         env:
-          VITE_PAGES_DEMO: '1'
           GITHUB_PAGES_BASE: /${{ github.event.repository.name }}/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
