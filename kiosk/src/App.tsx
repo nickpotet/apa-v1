@@ -37,8 +37,8 @@ import {
 
 const DEFAULT_LANGUAGE: Language = 'es';
 const SESSION_CONTEXT_TTL_MS = 30_000;
-/** One retry per remaining route (other Live models + the REST pipeline). */
-const MAX_QUOTA_RETRIES = LIVE_MODEL_CHAIN.length;
+/** Failover retries within one hold: one per remaining route. */
+const MAX_FAILOVER_RETRIES = LIVE_MODEL_CHAIN.length;
 const KIOSK_THINKING_TIMEOUT_MS = 20_000;
 const GUIDE_THINKING_TIMEOUT_MS = 45_000;
 const MIN_RECORDING_MS = 700;
@@ -64,7 +64,7 @@ const GUIDE_STAND = APP_URL.searchParams.get('stand');
 const APP_MODE: 'kiosk' | 'guide' = APP_URL.pathname.startsWith('/guide') || GUIDE_HALL || GUIDE_STAND
   ? 'guide'
   : 'kiosk';
-// Two adapters kept alive so a quota failure can fail over without a reload.
+// Two adapters kept alive so a failing model can fail over without a reload.
 // `?provider=pipeline` pins the turn-based path (STT→LLM→TTS over REST models,
 // a separate quota from the realtime Live model) — the documented cost/quota
 // lever in CLAUDE.md. Otherwise we start on Live and fall back automatically.
@@ -73,7 +73,7 @@ const liveRealtime = new GeminiVoiceProvider();
 const PIPELINE_PINNED = GUIDE_PROVIDER_MODE === 'pipeline';
 let provider: VoiceProvider = PIPELINE_PINNED ? livePipeline : liveRealtime;
 
-/** Route the next turn: Live while any model has quota, else the REST pipeline. */
+/** Route the next turn: Live while any model is healthy, else the REST pipeline. */
 function selectProvider(): VoiceProvider {
   if (PIPELINE_PINNED) return livePipeline;
   provider = allLiveModelsExhausted() ? livePipeline : liveRealtime;
@@ -182,11 +182,11 @@ export function App() {
   const thinkingTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deferredEndTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordingStartedAt = useRef(0);
-  /** True while the visitor is still holding the button — lets a quota failover
+  /** True while the visitor is still holding the button — lets a model failover
    *  retry salvage the current turn instead of losing what they are saying. */
   const buttonHeldRef    = useRef(false);
-  const quotaRetries     = useRef(0);
-  /** Lets the quota-failover path in onEnd restart the turn without the two
+  const failoverRetries     = useRef(0);
+  /** Lets the model-failover path in onEnd restart the turn without the two
    *  callbacks depending on each other. */
   const startTalkTurnRef = useRef<((mode?: TalkMode) => Promise<void>) | null>(null);
   /** How the current turn ends: releasing the button, or a second tap / silence. */
@@ -614,24 +614,25 @@ export function App() {
             turnState.current = 'idle';
             pendingEndRef.current = false;
             finishDiagnosticTurn('ended', { reason });
-            if (reason === 'quota') {
-              // The adapter has already parked the exhausted model, so selectProvider()
+            if (reason === 'model_unavailable') {
+              // The adapter has already parked the failing model, so selectProvider()
               // will now route to the next Live model or to the REST pipeline.
-              recordDiagnosticEvent('app', 'provider_quota_failover', liveFailoverSnapshot());
+              recordDiagnosticEvent('app', 'provider_model_failover', liveFailoverSnapshot());
               // Still holding the button? Restart straight away so the visitor keeps
               // talking into the new route and never sees the failure. Bounded by the
               // chain length so an all-exhausted key can't loop.
-              if (buttonHeldRef.current && quotaRetries.current < MAX_QUOTA_RETRIES) {
-                quotaRetries.current += 1;
-                recordDiagnosticEvent('app', 'quota_failover_retry', {
-                  attempt: quotaRetries.current,
+              if (buttonHeldRef.current && failoverRetries.current < MAX_FAILOVER_RETRIES) {
+                failoverRetries.current += 1;
+                recordDiagnosticEvent('app', 'model_failover_retry', {
+                  attempt: failoverRetries.current,
                 });
                 void startTalkTurnRef.current?.(talkModeRef.current);
                 return;
               }
-              // Released already — this turn is lost, but the next press uses the new
-              // route, so go quiet rather than showing a dead-end "come back later".
-              setKiosk('idle');
+              // Released already — this turn's audio is gone. Show the short "try
+              // again" cue rather than silently resetting; the next press uses the
+              // healthy route.
+              showTransientError();
               return;
             }
             setKiosk('idle');
@@ -686,10 +687,10 @@ export function App() {
   const endTalkTurn = useCallback((trigger: 'button' | EndOfSpeechReason) => {
     if (trigger === 'button') recordDiagnosticEvent('input', 'button_up');
     else recordDiagnosticEvent('input', 'auto_end_turn', { reason: trigger });
-    // The visitor is done talking: no further quota retry may salvage this turn,
+    // The visitor is done talking: no further failover retry may salvage this turn,
     // and the next press starts its retry budget fresh.
     buttonHeldRef.current = false;
-    quotaRetries.current = 0;
+    failoverRetries.current = 0;
     if (turnState.current === 'idle' || turnState.current === 'ending') return;
     const remainingMs = MIN_RECORDING_MS - (Date.now() - recordingStartedAt.current);
     if (remainingMs > 0) {

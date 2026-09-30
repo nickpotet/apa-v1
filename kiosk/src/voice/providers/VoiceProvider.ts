@@ -31,7 +31,9 @@ export interface VoiceProviderEvents {
   onEndOfSpeech?: (reason: EndOfSpeechReason) => void;
   onDebug?: (event: string, data?: Record<string, unknown>) => void;
   onError: (err: Error) => void;
-  onEnd: (reason: 'user' | 'timeout' | 'error' | 'network' | 'quota' | 'complete') => void;
+  /** 'model_unavailable': the model failed (quota, Google-side error, or silence)
+   *  and has been parked — the app should retry on the next route. */
+  onEnd: (reason: 'user' | 'timeout' | 'error' | 'network' | 'model_unavailable' | 'complete') => void;
 }
 
 export interface VoiceProvider {

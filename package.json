@@ -1,7 +1,7 @@
 {
   "name": "ap-monorepo",
   "private": true,
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "Apa penguin kiosk for cggalleries.com — root scripts for /kiosk and the Cloudflare Pages Functions in /functions",
   "scripts": {
     "dev": "node scripts/build-pages-config.mjs && concurrently -n api,kiosk -c blue,magenta \"npx wrangler pages dev kiosk/dist --port 8787 --ip 127.0.0.1\" \"npm:dev --prefix kiosk\"",
@@ -19,7 +19,8 @@
     "version:bump": "node scripts/bump-app-version.mjs",
     "typecheck": "npm run typecheck --prefix kiosk",
     "install:all": "npm install && npm install --prefix kiosk",
-    "test:end-of-speech": "tsx scripts/test-end-of-speech.ts"
+    "test:end-of-speech": "tsx scripts/test-end-of-speech.ts",
+    "test:model-failover": "tsx scripts/test-model-failover.mts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260511.1",

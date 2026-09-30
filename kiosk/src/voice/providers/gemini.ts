@@ -8,6 +8,9 @@ import { AudioPlayback } from '../../audio/AudioPlayback';
 import { EndOfSpeechDetector } from '../../audio/endOfSpeech';
 import {
   LIVE_MODEL_CHAIN,
+  OUTAGE_COOLDOWN_MS,
+  QUOTA_COOLDOWN_MS,
+  classifyLiveClose,
   markLiveModelExhausted,
   markLiveModelHealthy,
   nextAvailableLiveModel,
@@ -60,7 +63,7 @@ function buildInstructions(config: VoiceProviderConfig): string {
 
 export class GeminiVoiceProvider implements VoiceProvider {
   readonly name = 'Gemini Flash Live';
-  /** Chosen per session from LIVE_MODEL_CHAIN, skipping quota-parked models. */
+  /** Chosen per session from LIVE_MODEL_CHAIN, skipping parked (failing) models. */
   model = LIVE_MODEL_CHAIN[0];
   readonly requiresToken = true;
 
@@ -94,6 +97,10 @@ export class GeminiVoiceProvider implements VoiceProvider {
   private endOfSpeech: EndOfSpeechDetector | null = null;
   private resolveSetup: (() => void) | null = null;
   private setupDone = false;
+  /** Identifies the current session. One provider instance serves every turn, so
+   *  an old socket's late close/message (e.g. after we closed it on a model
+   *  failure) must not act on the session that replaced it. */
+  private sessionGen = 0;
 
   async start(config: VoiceProviderConfig, events: VoiceProviderEvents): Promise<void> {
     await this.close('user');
@@ -118,6 +125,8 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.lastBufferedReportMs = 0;
     this.endOfSpeech = config.endOfSpeech ? new EndOfSpeechDetector(config.endOfSpeech) : null;
     this.setupDone = false;
+    const gen = ++this.sessionGen;
+    const isCurrent = () => gen === this.sessionGen;
 
     try {
       events.onDebug?.('provider_start_requested', {
@@ -155,7 +164,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
         apiKey: config.ephemeralToken,
         ...(isEphemeralToken ? { httpOptions: { apiVersion: 'v1alpha' } } : {}),
       });
-      // Skip models parked by a previous quota rejection. If every model is parked
+      // Skip models parked after a failure. If every model is parked
       // we still try the primary — the cool-down may have lapsed upstream.
       this.model = nextAvailableLiveModel() ?? LIVE_MODEL_CHAIN[0];
       const connectStartedAt = performance.now();
@@ -170,7 +179,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
         isFallback: this.model !== LIVE_MODEL_CHAIN[0],
       });
 
-      this.session = await ai.live.connect({
+      const session = await ai.live.connect({
         model: this.model,
         config: {
           responseModalities: [Modality.AUDIO],
@@ -187,32 +196,45 @@ export class GeminiVoiceProvider implements VoiceProvider {
               latencyMs: Math.round(performance.now() - connectStartedAt),
             });
           },
-          onmessage: (msg) => this.handleMessage(msg),
-          onerror: (e) => this.fail(new Error(String((e as ErrorEvent).message ?? e))),
+          onmessage: (msg) => { if (isCurrent()) this.handleMessage(msg); },
+          onerror: (e) => { if (isCurrent()) this.fail(new Error(String((e as ErrorEvent).message ?? e))); },
           onclose: (e) => {
+            if (!isCurrent()) return; // a replaced session's socket finishing its close
             events.onDebug?.('provider_socket_closed', {
               code: (e as CloseEvent).code,
               reason: (e as CloseEvent).reason,
             });
             if (this.stopped) return;
             const { code, reason } = e as CloseEvent;
-            // Google closes with 1011 + "You exceeded your current quota..." when the
-            // Live-model quota is exhausted. Surface it distinctly so the UI can show
-            // the "come back in a bit" screen instead of a silently resetting button.
-            if (/quota|resource_exhausted|billing/i.test(reason ?? '')) {
-              // Park this model so the next turn skips straight to the next one.
-              markLiveModelExhausted(this.model);
-              events.onDebug?.('provider_model_quota_exhausted', {
+            // Quota exhaustion or a Google-side failure of *this* model: park it so the
+            // next attempt goes straight to the next model in the chain.
+            const failure = classifyLiveClose(code, reason);
+            if (failure) {
+              markLiveModelExhausted(
+                this.model,
+                failure === 'quota' ? QUOTA_COOLDOWN_MS : OUTAGE_COOLDOWN_MS,
+              );
+              events.onDebug?.('provider_model_failed', {
                 model: this.model,
+                failure,
+                code,
+                reason: String(reason ?? '').slice(0, 120),
                 next: nextAvailableLiveModel(),
               });
-              this.close('quota', false);
+              this.close('model_unavailable', false);
               return;
             }
             this.close(code === 1000 ? 'user' : 'network', false);
           },
         },
       });
+
+      if (!isCurrent()) {
+        // A newer session started while this socket was opening — don't touch it.
+        try { session.close(); } catch {}
+        return;
+      }
+      this.session = session;
 
       if (this.stopped) {
         // Stopped (e.g. by the app's start watchdog) while the socket was opening —
@@ -230,7 +252,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
         new Promise<void>((resolve) => { setupTimer = setTimeout(resolve, SETUP_TIMEOUT_MS); }),
       ]);
       clearTimeout(setupTimer);
-      if (this.stopped) return;
+      if (!isCurrent() || this.stopped) return;
       if (!this.setupDone) {
         // "timed out" is classed as a connectivity error, so the UI shows the QR fallback.
         this.fail(new Error(`Gemini Live setup timed out after ${SETUP_TIMEOUT_MS / 1000}s`));
@@ -287,7 +309,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
   }
 
   private handleMessage(msg: { setupComplete?: unknown; serverContent?: {
-    modelTurn?: { parts?: Array<{ inlineData?: { mimeType?: string; data?: string }; text?: string }> };
+    modelTurn?: { parts?: Array<{ inlineData?: { mimeType?: string; data?: string }; text?: string; thought?: boolean }> };
     inputTranscription?: { text?: string };
     outputTranscription?: { text?: string };
     turnComplete?: boolean;
@@ -335,7 +357,10 @@ export class GeminiVoiceProvider implements VoiceProvider {
         }
         this.playback.enqueuePcm(part.inlineData.data);
       }
-      if (part.text) {
+      // Native-audio fallback models stream their reasoning as text parts flagged
+      // `thought` ("**Confirming Price Structures** …"). It is never spoken, and must
+      // not enter Apa's transcript — that feeds the next turn's context and the logs.
+      if (part.text && !part.thought) {
         if (!this.outputTranscriptSeen) {
           this.outputTranscriptSeen = true;
           ev.onDebug?.('provider_first_output_transcript');
@@ -441,18 +466,21 @@ export class GeminiVoiceProvider implements VoiceProvider {
     this.clearFirstAudioWatchdog();
     this.firstAudioTimeout = setTimeout(() => {
       this.firstAudioTimeout = null;
-      // A quota-throttled Live model often does NOT close with 1011 — it transcribes
-      // the visitor correctly and then never generates a reply (verified 2026-09-03
-      // against the exhausted gemini-3.1-flash-live-preview). So an input transcript
-      // with no response audio means socket and upstream are healthy and the *model*
-      // is stalling: park it and fail over instead of surfacing a dead end.
-      if (this.inputTranscriptSeen) {
-        markLiveModelExhausted(this.model);
+      // The server confirmed setup, received the visitor's audio, and never
+      // replied. That is the model failing, not the network: an exhausted model
+      // transcribes and stays silent (2026-09-03), a model in a Google outage stays
+      // silent without even a transcript (2026-09-30). Park it and fail over.
+      if (this.setupDone) {
+        markLiveModelExhausted(
+          this.model,
+          this.inputTranscriptSeen ? QUOTA_COOLDOWN_MS : OUTAGE_COOLDOWN_MS,
+        );
         this.events?.onDebug?.('provider_model_stalled', {
           model: this.model,
+          heardVisitor: this.inputTranscriptSeen,
           next: nextAvailableLiveModel(),
         });
-        this.close('quota');
+        this.close('model_unavailable');
         return;
       }
       this.events?.onDebug?.('provider_first_audio_timeout');
@@ -516,7 +544,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
   }
 
   private async close(
-    reason: 'user' | 'timeout' | 'error' | 'network' | 'quota' | 'complete',
+    reason: 'user' | 'timeout' | 'error' | 'network' | 'model_unavailable' | 'complete',
     closeSocket = true,
   ): Promise<void> {
     if (this.stopped) return;

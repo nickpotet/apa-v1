@@ -290,3 +290,18 @@ Two such paths existed (the logs can't tell which one hit, so both are fixed):
 Verified in the running app (Vite + `wrangler pages dev`): hidden config at boot → offline card → config restored → recovered on the 4th attempt; hung `getUserMedia` → "Preparando…" → `start_timeout` at 20 s → idle; then a normal touch turn with recorded speech completed (exact transcript, spoken reply).
 
 Note: a kiosk stuck in the pre-1.0.10 `starting` state is not idle, so auto-update can't reload it — it needs one manual app restart. A kiosk stuck in the config-`offline` state is idle and picks up 1.0.10 by itself.
+
+## 2026-09-30 (later) — Correction, and failover for Google-side model outages (1.0.11)
+
+Correction to the entry above: the kiosk did not freeze on 09-30. Its failed turns reached D1 late (the device queues logs and flushes them later), so the first log pull saw nothing. The real failure: 7 consecutive kiosk turns at 14:40–14:44 UTC on `gemini-3.1-flash-live-preview`, which failed on Google's side — 3× no reply within 12 s (setup completed, no input transcript) and 4× socket close `1011 Internal error encountered`. The primary recovered within ~10 minutes. The 1.0.10 fixes (config retry, start watchdog) remain valid for their own failure paths but were not the cause.
+
+The Live-model failover did not fire because it only recognised quota closes and "transcript but no reply". Changes:
+- `classifyLiveClose()` in `liveModelFailover.ts`: quota text → `quota`; codes 1011/1013/1014 or internal/unavailable/overloaded/deadline text → `server_error`; 1007 (our protocol error), 1000 and 1006 (network) are not the model's fault.
+- No reply within 12 s after `setupComplete` now parks the model whether or not the visitor was transcribed. Cool-down 30 min for quota-shaped failures, 10 min for outages.
+- End reason `quota` renamed to `model_unavailable`. If the visitor is still holding the button the turn restarts on the next model; otherwise they get the short transient cue instead of a silent reset.
+- Found while verifying: the provider instance serves every turn, and a replaced socket's late close event could kill the new session — which broke the in-turn retry. Socket callbacks and late `connect()` resolutions are now scoped to their session.
+- Found while verifying: the native-audio fallback models stream their reasoning as text parts with `thought: true` ("**Confirming Price Structures** …"); these were recorded as Apa's words, feeding the next turn's context and the logs. They are now dropped. The primary model sends no text parts.
+
+Verified in the running app with a WebSocket shim that fails only the primary model: a 1011 during a held turn → restarted on `gemini-2.5-flash-native-audio-latest`, answered correctly; a silent primary after a tap-to-talk turn → parked at 12 s (`heardVisitor: false`, as in the kiosk logs), and the next tap went straight to the fallback with a clean transcript. `scripts/test-model-failover.mts` covers the classification with the close codes seen on the kiosk.
+
+Open: the transient error cue reads "No puedo escuchar" ("I can't hear") for every error, including model failures, where the visitor was heard fine.
