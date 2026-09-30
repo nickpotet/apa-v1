@@ -42,6 +42,13 @@ const MAX_QUOTA_RETRIES = LIVE_MODEL_CHAIN.length;
 const KIOSK_THINKING_TIMEOUT_MS = 20_000;
 const GUIDE_THINKING_TIMEOUT_MS = 45_000;
 const MIN_RECORDING_MS = 700;
+/** A turn that hasn't gone live by now is abandoned. Healthy starts take ~2 s
+ *  (mic + token + socket + setupComplete); nothing in that chain had a timeout,
+ *  so one hung step used to freeze the kiosk silently until someone rebooted it. */
+const START_TIMEOUT_MS = 20_000;
+/** Config retry backoff. A single failed fetch at boot (panel up before Wi-Fi)
+ *  used to leave the kiosk "offline" with a dead button for the rest of the day. */
+const CONFIG_RETRY_MS = [2_000, 5_000, 10_000, 30_000, 60_000];
 
 const input      = new ArcadeButtonMic();
 const chipPlayer = new ChipResponsePlayer();
@@ -187,6 +194,10 @@ export function App() {
   const endTalkTurnRef   = useRef<((trigger: 'button' | EndOfSpeechReason) => void) | null>(null);
   /** Last visitor touch of any kind — auto-update never reloads under someone's nose. */
   const lastInteractionRef = useRef(0);
+  /** Bumped on every turn start and on watchdog abandon, so a start that
+   *  resolves late can tell it no longer owns the kiosk. */
+  const startGenRef      = useRef(0);
+  const startWatchdog    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const transcriptRef    = useRef<TranscriptEntry[]>([]);
   const entranceSessionRef = useRef<EntranceSessionThemes | null>(null);
   const languageLockRef  = useRef<Language | null>(URL_LANGUAGE);
@@ -206,35 +217,59 @@ export function App() {
     });
 
     // Note: Cloudflare Pages serves static /api/config as octet-stream; we just parse the body.
-    fetch(`/api/config?v=${encodeURIComponent(APP_VERSION)}`, { cache: 'no-store' })
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`config HTTP ${r.status}`);
-        const text = await r.text();
-        return JSON.parse(text) as { appVersion?: string; systemPrompt: string; guideSystemPrompt?: string };
-      })
-      .then((d) => {
-        if (d.appVersion && d.appVersion !== APP_VERSION) {
-          recordDiagnosticEvent('app', 'app_version_mismatch', {
-            clientVersion: APP_VERSION,
-            configVersion: d.appVersion,
+    let configTimer: ReturnType<typeof setTimeout> | undefined;
+    let cancelled = false;
+    const loadConfig = (attempt: number) => {
+      fetch(`/api/config?v=${encodeURIComponent(APP_VERSION)}`, { cache: 'no-store' })
+        .then(async (r) => {
+          if (!r.ok) throw new Error(`config HTTP ${r.status}`);
+          const text = await r.text();
+          return JSON.parse(text) as { appVersion?: string; systemPrompt: string; guideSystemPrompt?: string };
+        })
+        .then((d) => {
+          if (cancelled) return;
+          if (d.appVersion && d.appVersion !== APP_VERSION) {
+            recordDiagnosticEvent('app', 'app_version_mismatch', {
+              clientVersion: APP_VERSION,
+              configVersion: d.appVersion,
+            });
+          }
+          setPrompt(APP_MODE === 'guide' ? (d.guideSystemPrompt ?? d.systemPrompt) : d.systemPrompt);
+          if (attempt > 0) {
+            recordDiagnosticEvent('app', 'config_loaded_after_retry', { attempts: attempt + 1 });
+            // Leave the "lost connection" card we showed while retrying.
+            setKiosk((state) => (state === 'offline' ? 'idle' : state));
+          }
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          console.error('[config]', err);
+          recordDiagnosticEvent('app', 'config_load_failed', {
+            attempt: attempt + 1,
+            error: err instanceof Error ? err.message : String(err),
           });
-        }
-        setPrompt(APP_MODE === 'guide' ? (d.guideSystemPrompt ?? d.systemPrompt) : d.systemPrompt);
-      })
-      .catch((err) => {
-        console.error('[config]', err);
-        setKiosk('offline');
-      });
+          setKiosk('offline');
+          // Keep retrying for as long as the page lives — never stay dead.
+          const delay = CONFIG_RETRY_MS[Math.min(attempt, CONFIG_RETRY_MS.length - 1)];
+          configTimer = setTimeout(() => loadConfig(attempt + 1), delay);
+        });
+    };
+    loadConfig(0);
 
     // Pre-cache worklets so the first conversation doesn't pay a cold-fetch penalty.
     fetch('/playback-worklet.js').catch(() => {});
 
     requestMicrophonePermission();
+    return () => {
+      cancelled = true;
+      clearTimeout(configTimer);
+    };
   }, []);
 
   useEffect(() => () => {
     clearTimeout(errorTimer.current ?? undefined);
     clearTimeout(contextTimer.current ?? undefined);
+    clearTimeout(startWatchdog.current ?? undefined);
     clearTimeout(thinkingTimer.current ?? undefined);
     clearTimeout(deferredEndTimer.current ?? undefined);
   }, []);
@@ -439,10 +474,37 @@ export function App() {
     recordDiagnosticEvent('app', 'state_preparing');
     setKiosk('preparing');
 
+    const gen = ++startGenRef.current;
+    const stillOwnsStart = () => startGenRef.current === gen;
+    clearTimeout(startWatchdog.current ?? undefined);
+    startWatchdog.current = setTimeout(() => {
+      startWatchdog.current = null;
+      if (!stillOwnsStart() || turnState.current !== 'starting') return;
+      // Mic prompt, token fetch or socket open hung. Abandon the turn so the kiosk
+      // is usable again, and log it — this path used to leave no trace at all.
+      startGenRef.current += 1;
+      console.warn('[voice] start timed out; abandoning turn');
+      recordDiagnosticEvent('app', 'start_timeout', { afterMs: START_TIMEOUT_MS });
+      clearThinkingTimeout();
+      turnState.current = 'idle';
+      pendingEndRef.current = false;
+      buttonHeldRef.current = false;
+      provider.stop().catch(() => {});
+      finishDiagnosticTurn('error', { reason: 'start_timeout', error: `Turn did not start within ${START_TIMEOUT_MS / 1000}s` });
+      showConnectionFallback('start_timeout');
+    }, START_TIMEOUT_MS);
+    const settleStart = () => {
+      if (!stillOwnsStart()) return;
+      clearTimeout(startWatchdog.current ?? undefined);
+      startWatchdog.current = null;
+    };
+
     recordDiagnosticEvent('app', 'mic_permission_check_started');
     const micReady = await requestMicrophonePermission(true);
+    if (!stillOwnsStart()) return; // abandoned by the start watchdog
     recordDiagnosticEvent('app', 'mic_permission_check_finished', { granted: micReady });
     if (!micReady) {
+      settleStart();
       turnState.current = 'idle';
       finishDiagnosticTurn('error', { reason: 'mic_permission_denied', error: 'Microphone permission unavailable' });
       showTransientError();
@@ -453,7 +515,9 @@ export function App() {
       const access = provider.requiresToken === false
         ? { token: '' }
         : await takeVoiceToken();
+      if (!stillOwnsStart()) return;
       if (!access) {
+        settleStart();
         finishDiagnosticTurn('ended', { reason: 'capped' });
         turnState.current = 'idle';
         return;
@@ -575,6 +639,9 @@ export function App() {
         },
       );
 
+      // Started too late: the watchdog already gave up on this turn and stopped the provider.
+      if (!stillOwnsStart()) return;
+      settleStart();
       // Session is live. If the user already let go, end the turn immediately.
       turnState.current = 'live';
       if (pendingEndRef.current) {
@@ -597,6 +664,8 @@ export function App() {
         }
       }
     } catch (err) {
+      if (!stillOwnsStart()) return;
+      settleStart();
       console.error('[voice start]', err);
       clearThinkingTimeout();
       turnState.current = 'idle';

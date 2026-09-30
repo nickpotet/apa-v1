@@ -214,7 +214,13 @@ export class GeminiVoiceProvider implements VoiceProvider {
         },
       });
 
-      if (this.stopped) return;
+      if (this.stopped) {
+        // Stopped (e.g. by the app's start watchdog) while the socket was opening —
+        // don't leak it.
+        try { this.session?.close(); } catch {}
+        this.session = null;
+        return;
+      }
 
       // Hold realtime input until the server confirms setup; mic audio keeps
       // buffering meanwhile, so the visitor loses nothing.

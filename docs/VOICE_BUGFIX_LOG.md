@@ -278,3 +278,15 @@ Three weeks of venue logs after 1.0.8 (247 kiosk turns, Android 12 WebView panel
 - Removed the unread `ui` block from `config/languages.json`; UI copy lives only in `kiosk/src/config/venueConfig.ts`.
 - Serbian flag now shows the lesser coat of arms (double-headed eagle, inverted wings, crown), checked against the official flag at badge size.
 - CLAUDE.md / AGENTS.md updated to the actual hardware and backend; they no longer claim a server-side daily $-cap, which does not exist.
+
+## 2026-09-30 — Kiosk could freeze silently for a whole day (1.0.10)
+
+1.0.9 ran cleanly for a week: 72/72 kiosk turns completed, no 75 s hangs, no 1007 closes. Then the kiosk went silent — the last turn was 2026-09-29 16:33, and on 09-30 there were zero records, not even errors. Server endpoints, token minting, both Live models (real-speech probe) and the kiosk mic (levels in line with previous days) were all healthy, so the freeze was on the device, in paths that never write a log.
+
+Two such paths existed (the logs can't tell which one hit, so both are fixed):
+- **Config loaded once, never retried.** If `/api/config` failed at page load — e.g. the panel came up before Wi-Fi, or a `webglcontextlost` reload hit a network blip — the kiosk set `offline` with no way back: button blocked, `startTalkTurn` returning at `if (!systemPrompt)` before any diagnostics. Now retried with backoff (2 s, 5 s, 10 s, 30 s, then every 60 s); on success the kiosk leaves `offline` by itself. Logs `config_load_failed` / `config_loaded_after_retry`.
+- **Turn start had no timeout.** Mic permission, token fetch and `live.connect()` (which awaits socket open) could each wait forever; the turn stayed in `starting`, every later tap was ignored, and the half-open diagnostic turn was never sent. A 20 s start watchdog now abandons such a turn, logs it as `start_timeout`, shows the connection card for 8 s and returns to idle. A start that resolves after the watchdog fired is discarded via a generation counter, and a socket that opens after `stop()` is closed instead of leaked.
+
+Verified in the running app (Vite + `wrangler pages dev`): hidden config at boot → offline card → config restored → recovered on the 4th attempt; hung `getUserMedia` → "Preparando…" → `start_timeout` at 20 s → idle; then a normal touch turn with recorded speech completed (exact transcript, spoken reply).
+
+Note: a kiosk stuck in the pre-1.0.10 `starting` state is not idle, so auto-update can't reload it — it needs one manual app restart. A kiosk stuck in the config-`offline` state is idle and picks up 1.0.10 by itself.
