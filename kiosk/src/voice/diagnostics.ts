@@ -1,6 +1,7 @@
 import type { Language } from './providers/VoiceProvider';
 import type { EntranceTheme, OpeningTheme } from './entranceCadence';
 import { APP_VERSION } from '../config/appVersion';
+import { createDurableLogQueue } from './durableLogQueue';
 
 type EventSource = 'app' | 'provider' | 'playback' | 'input' | 'token';
 
@@ -39,8 +40,18 @@ type DiagnosticTurn = {
   transcripts: DiagnosticTranscript[];
 };
 
+/** Turns that never reached /api/log. Shown in ?debug=1 and sent with the next turn,
+ *  so a loss is visible instead of silent. Counted since this page load. */
+type LogHealth = {
+  droppedRejected: number;
+  droppedOverflow: number;
+  directSendFailed: number;
+  lastError?: string;
+};
+
 type DiagnosticsStore = {
   appVersion: string;
+  logHealth: LogHealth;
   deviceId: string;
   device: Record<string, unknown>;
   activeTurn: DiagnosticTurn | null;
@@ -61,13 +72,6 @@ const MAX_ARCHIVE_TURNS = 400;
 const ARCHIVE_STORAGE_KEY = 'apaConversationArchive';
 const DURABLE_LOG_QUEUE_KEY = 'apaDurableLogQueue';
 const MAX_DURABLE_LOG_QUEUE = 100;
-
-type DurableLogItem = {
-  id: string;
-  queuedAt: string;
-  attempts: number;
-  payload: Record<string, unknown>;
-};
 
 function createDeviceId(): string {
   const existing = localStorage.getItem('apaDeviceId');
@@ -115,23 +119,6 @@ function saveArchivedTurns(turns: DiagnosticTurn[]): void {
   } catch {}
 }
 
-function loadDurableLogQueue(): DurableLogItem[] {
-  try {
-    const raw = localStorage.getItem(DURABLE_LOG_QUEUE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? parsed as DurableLogItem[] : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveDurableLogQueue(queue: DurableLogItem[]): void {
-  try {
-    localStorage.setItem(DURABLE_LOG_QUEUE_KEY, JSON.stringify(queue.slice(-MAX_DURABLE_LOG_QUEUE)));
-  } catch {}
-}
-
 const store: DiagnosticsStore = window.__apaDiagnostics ?? {
   appVersion: APP_VERSION,
   deviceId: createDeviceId(),
@@ -140,9 +127,11 @@ const store: DiagnosticsStore = window.__apaDiagnostics ?? {
   recentTurns: [],
   archiveTurns: loadArchivedTurns(),
   recentEvents: [],
+  logHealth: { droppedRejected: 0, droppedOverflow: 0, directSendFailed: 0 },
 };
 
 store.appVersion = APP_VERSION;
+store.logHealth ??= { droppedRejected: 0, droppedOverflow: 0, directSendFailed: 0 };
 window.__apaDiagnostics = store;
 
 let turnCounter = 0;
@@ -162,26 +151,6 @@ function pushRecentTurn(turn: DiagnosticTurn): void {
   window.__apaDiagnostics = store;
 }
 
-function postDiagnosticLog(payload: Record<string, unknown>): void {
-  const body = JSON.stringify({
-    appVersion: APP_VERSION,
-    deviceId: store.deviceId,
-    device: store.device,
-    page: {
-      href: window.location.href,
-      referrer: document.referrer,
-    },
-    ...payload,
-  });
-
-  void fetch('/api/log', {
-    method: 'POST',
-    keepalive: true,
-    headers: { 'Content-Type': 'application/json' },
-    body,
-  }).catch(() => {});
-}
-
 function withEnvelope(payload: Record<string, unknown>): Record<string, unknown> {
   return {
     appVersion: APP_VERSION,
@@ -195,42 +164,65 @@ function withEnvelope(payload: Record<string, unknown>): Record<string, unknown>
   };
 }
 
-async function sendDurableLog(payload: Record<string, unknown>): Promise<void> {
-  const response = await fetch('/api/log', {
+function postDiagnosticLog(payload: Record<string, unknown>): void {
+  // No keepalive: its 64 KB body budget is what starved log uploads on the venue
+  // WebView. A lost live event is harmless — the full turn comes via the queue.
+  void fetch('/api/log', {
     method: 'POST',
-    keepalive: true,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) throw new Error(`log HTTP ${response.status}`);
+    body: JSON.stringify(withEnvelope(payload)),
+  }).catch(() => {});
 }
 
-function enqueueDurableLog(payload: Record<string, unknown>): void {
-  const queue = loadDurableLogQueue();
-  const id = String(payload.turnId ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  const withoutExisting = queue.filter((item) => item.id !== id);
-  withoutExisting.push({
-    id,
-    queuedAt: new Date().toISOString(),
-    attempts: 0,
-    payload,
-  });
-  saveDurableLogQueue(withoutExisting);
-}
+/** The server refused this particular payload (4xx): retrying it won't help. */
+class LogRejectedError extends Error {}
 
-async function flushDurableLogQueue(): Promise<void> {
-  const queue = loadDurableLogQueue();
-  if (!queue.length) return;
-  const remaining: DurableLogItem[] = [];
-  for (const item of queue) {
-    try {
-      await sendDurableLog(item.payload);
-    } catch {
-      remaining.push({ ...item, attempts: item.attempts + 1 });
+/** A hung request would hold the single-flight queue until the page reloads. */
+const LOG_SEND_TIMEOUT_MS = 25_000;
+
+async function sendDurableLog(payload: Record<string, unknown>): Promise<void> {
+  const abort = new AbortController();
+  const timer = window.setTimeout(() => abort.abort(), LOG_SEND_TIMEOUT_MS);
+  try {
+    const response = await fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: abort.signal,
+    });
+    if (response.ok) {
+      store.logHealth.lastError = undefined;
+      return;
     }
+    const message = `log HTTP ${response.status}`;
+    // 5xx (D1 down, binding lost, Cloudflare edge), 408 and 429 say nothing about
+    // this item: treat them like offline so a long outage can't wear the backlog out.
+    const serverSide = response.status >= 500 || response.status === 408 || response.status === 429;
+    throw serverSide ? new Error(message) : new LogRejectedError(message);
+  } catch (err) {
+    store.logHealth.lastError = err instanceof Error ? err.message : String(err);
+    throw err;
+  } finally {
+    window.clearTimeout(timer);
   }
-  saveDurableLogQueue(remaining);
 }
+
+const durableLogQueue = createDurableLogQueue({
+  storage: localStorage,
+  key: DURABLE_LOG_QUEUE_KEY,
+  maxItems: MAX_DURABLE_LOG_QUEUE,
+  send: sendDurableLog,
+  // Network errors, timeouts and server-side statuses all stop the run.
+  isOffline: (err) => !(err instanceof LogRejectedError),
+  maxAttempts: 50,
+  onDrop: (reason, count) => {
+    if (reason === 'rejected') store.logHealth.droppedRejected += count;
+    else store.logHealth.droppedOverflow += count;
+  },
+});
+
+/** Retry a stuck backlog even when nobody talks to Apa and 'online' never fires. */
+const LOG_RETRY_INTERVAL_MS = 5 * 60_000;
 
 function postTurnLog(turn: DiagnosticTurn): void {
   const payload = withEnvelope({
@@ -255,12 +247,16 @@ function postTurnLog(turn: DiagnosticTurn): void {
     duration_s: turn.durationMs ? turn.durationMs / 1000 : 0,
     events: turn.events,
     transcripts: turn.transcripts,
+    logHealth: { ...store.logHealth },
   });
 
-  void flushDurableLogQueue()
-    .catch(() => {})
-    .then(() => sendDurableLog(payload))
-    .catch(() => enqueueDurableLog(payload));
+  // Queue first, then upload: the turn survives a reload or a failed request.
+  // Storage full (archive + backlog near the WebView quota)? Send it directly
+  // rather than lose it.
+  if (!durableLogQueue.enqueue(turn.id, payload)) {
+    void sendDurableLog(payload).catch(() => { store.logHealth.directSendFailed += 1; });
+  }
+  void durableLogQueue.flush();
 }
 
 function pushRecentEvent(event: DiagnosticEvent & { turnId?: string; at: string }): void {
@@ -268,8 +264,11 @@ function pushRecentEvent(event: DiagnosticEvent & { turnId?: string; at: string 
   window.__apaDiagnostics = store;
 }
 
-window.setTimeout(() => { void flushDurableLogQueue(); }, 1000);
-window.addEventListener('online', () => { void flushDurableLogQueue(); });
+window.setTimeout(() => { void durableLogQueue.flush(); }, 1000);
+window.addEventListener('online', () => { void durableLogQueue.flush(); });
+window.setInterval(() => {
+  if (durableLogQueue.size()) void durableLogQueue.flush();
+}, LOG_RETRY_INTERVAL_MS);
 
 export function beginDiagnosticTurn(meta: {
   trigger: string;
@@ -400,6 +399,10 @@ export function refreshDiagnosticDeviceInfo(): void {
   });
 }
 
+export function getLogQueueSize(): number {
+  return durableLogQueue.size();
+}
+
 export function getDiagnosticStore(): DiagnosticsStore {
   return store;
 }
@@ -414,6 +417,8 @@ export function serializeDiagnostics(): string {
     recentTurns: store.recentTurns,
     archiveTurns: store.archiveTurns,
     recentEvents: store.recentEvents,
+    logHealth: store.logHealth,
+    logQueueSize: durableLogQueue.size(),
     page: {
       href: window.location.href,
       referrer: document.referrer,

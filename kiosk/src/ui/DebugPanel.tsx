@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getDiagnosticStore, refreshDiagnosticDeviceInfo, serializeDiagnostics } from '../voice/diagnostics';
+import { getDiagnosticStore, getLogQueueSize, refreshDiagnosticDeviceInfo, serializeDiagnostics } from '../voice/diagnostics';
 
 function formatData(data?: Record<string, unknown>): string {
   if (!data) return '';
@@ -27,6 +27,9 @@ export function DebugPanel() {
   const events = diagnostics.recentEvents.slice(0, 12);
   const latestEvent = events[0] ?? null;
   const archiveCount = diagnostics.archiveTurns.length;
+  const logQueueSize = getLogQueueSize();
+  const { droppedRejected, droppedOverflow, directSendFailed, lastError } = diagnostics.logHealth;
+  const logsLost = droppedRejected + droppedOverflow + directSendFailed;
 
   const copyAll = async () => {
     const text = serializeDiagnostics();
@@ -58,6 +61,13 @@ export function DebugPanel() {
           {!expanded && archiveCount > 0 && (
             <div className="mt-1 text-white/55">
               saved turns: {archiveCount}
+            </div>
+          )}
+          {(logQueueSize > 0 || logsLost > 0) && (
+            <div className={`mt-1 ${logsLost > 0 ? 'text-red-300' : 'text-white/55'}`}>
+              log queue: {logQueueSize}
+              {logsLost > 0 && ` · lost: ${droppedRejected} rejected, ${droppedOverflow} overflow, ${directSendFailed} direct`}
+              {lastError && ` · ${lastError}`}
             </div>
           )}
         </div>

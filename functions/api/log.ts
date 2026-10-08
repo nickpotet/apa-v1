@@ -120,6 +120,11 @@ async function saveVoiceTurn(db: D1Database, body: Record<string, unknown>) {
     ));
   }
 
+  // The turn carries its full event list, so it replaces whatever is stored for it:
+  // the live voice_event stream, or an earlier upload of the same turn (a client
+  // re-sends when a reload aborted a request the server had already stored).
+  statements.push(db.prepare('DELETE FROM voice_events WHERE turn_id = ?').bind(turnId));
+
   for (const event of events) {
     statements.push(db.prepare(`
       INSERT INTO voice_events (turn_id, app_version, device_id, source, event, at_ms, data)
