@@ -70,7 +70,7 @@ Apa is a curious, mischievous penguin who **lives** at the cggalleries.com VR ex
 
 - **Deploy:** `npm run deploy:pages` (needs `CLOUDFLARE_API_TOKEN`, kept in `.dev.vars.cloudflare`). The venue kiosk picks the deploy up by itself within ~5 min of idle.
 - **Diagnostics:** `?debug=1` shows an on-screen panel with a copy-all button. Every turn is logged to D1 with per-event timing, mic levels and socket close codes; read them via `GET /api/admin/conversations` (Bearer `ADMIN_LOG_TOKEN`) or `npm run sync:voice-logs`. Diagnose from these logs before guessing.
-- **Tests:** `npm run test:end-of-speech` (real recorded speech through the detector), `test:model-failover` (close classification on real kiosk close codes), `test:log-queue` (log uploads: no loss, no double send, offline/rejected handling, no keepalive), `test:languages`, `test:entrance-cadence`, `check:languages`.
+- **Tests:** `npm run test:end-of-speech` (real recorded speech through the detector), `test:model-failover` (close classification on real kiosk close codes), `test:log-queue` (log uploads: no loss, no double send, offline/rejected handling, no keepalive), `test:error-classification` (which errors show the QR "lost connection" card), `test:languages`, `test:entrance-cadence`, `check:languages`.
 
 ## Working style for Claude Code
 

@@ -21,7 +21,8 @@
     "install:all": "npm install && npm install --prefix kiosk",
     "test:end-of-speech": "tsx scripts/test-end-of-speech.ts",
     "test:model-failover": "tsx scripts/test-model-failover.mts",
-    "test:log-queue": "tsx scripts/test-log-queue.mts"
+    "test:log-queue": "tsx scripts/test-log-queue.mts",
+    "test:error-classification": "tsx scripts/test-error-classification.mts"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260511.1",
