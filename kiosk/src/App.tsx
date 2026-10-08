@@ -34,7 +34,7 @@ import {
   refreshDiagnosticDeviceInfo,
   updateDiagnosticTurn,
 } from './voice/diagnostics';
-import { createBusyStreak, isConnectivityError, isModelBusyError } from './voice/errorClassification';
+import { classifyVoiceFailure, createBusyStreak } from './voice/errorClassification';
 
 const DEFAULT_LANGUAGE: Language = 'es';
 const SESSION_CONTEXT_TTL_MS = 30_000;
@@ -276,7 +276,7 @@ export function App() {
 
   // Google "high demand" on the last route: "try again" for a blip, the QR card
   // once it keeps happening (3 within 2 min), so visitors aren't stuck for hours.
-  const busyStreak = useRef(createBusyStreak({ limit: 3, windowMs: 2 * 60_000 }));
+  const [busyStreak] = useState(() => createBusyStreak({ limit: 3, windowMs: 2 * 60_000 }));
 
   const showConnectionFallback = useCallback((reason: string, error?: unknown) => {
     clearTimeout(errorTimer.current ?? undefined);
@@ -291,12 +291,25 @@ export function App() {
     }, 8000);
   }, []);
 
-  const showModelBusy = useCallback((error: unknown) => {
-    const persistent = busyStreak.current.record();
-    recordDiagnosticEvent('app', 'model_busy', { persistent });
-    if (persistent) showConnectionFallback('model_busy_persistent', error);
-    else showTransientError();
-  }, [showConnectionFallback, showTransientError]);
+  /** One place decides what a failed turn looks like to the visitor. `unknown` is
+   *  the answer for errors we can't classify, which differs per call site. */
+  const showVoiceFailure = useCallback((
+    reason: string,
+    error: unknown,
+    unknown: 'transient' | 'offline',
+  ) => {
+    const kind = classifyVoiceFailure(error);
+    if (kind === 'busy') {
+      const persistent = busyStreak.record();
+      recordDiagnosticEvent('app', 'model_busy', { persistent });
+      if (persistent) showConnectionFallback('model_busy_persistent', error);
+      else showTransientError();
+    } else if (kind === 'connectivity' || unknown === 'offline') {
+      showConnectionFallback(reason, error);
+    } else {
+      showTransientError();
+    }
+  }, [busyStreak, showConnectionFallback, showTransientError]);
 
   const clearThinkingTimeout = useCallback(() => {
     clearTimeout(thinkingTimer.current ?? undefined);
@@ -607,16 +620,14 @@ export function App() {
             turnState.current = 'idle';
             pendingEndRef.current = false;
             finishDiagnosticTurn('error', { reason: 'provider_error', error: e.message });
-            if (isModelBusyError(e)) showModelBusy(e);
-            else if (isConnectivityError(e)) showConnectionFallback('provider_error', e);
-            else showTransientError();
+            showVoiceFailure('provider_error', e, 'transient');
           },
           onEnd: (reason) => {
             clearThinkingTimeout();
             turnState.current = 'idle';
             pendingEndRef.current = false;
             finishDiagnosticTurn('ended', { reason });
-            if (reason === 'complete') busyStreak.current.reset();
+            if (reason === 'complete') busyStreak.reset();
             if (reason === 'model_unavailable') {
               // The adapter has already parked the failing model, so selectProvider()
               // will now route to the next Live model or to the REST pipeline.
@@ -679,10 +690,9 @@ export function App() {
         reason: 'start_failed',
         error: err instanceof Error ? err.message : String(err),
       });
-      if (isModelBusyError(err)) showModelBusy(err);
-      else showConnectionFallback('start_failed', err);
+      showVoiceFailure('start_failed', err, 'offline');
     }
-  }, [clearThinkingTimeout, remember, showConnectionFallback, showModelBusy, showTransientError, startThinkingTimeout, syncUiLanguage, systemPrompt, takeVoiceToken]);
+  }, [clearThinkingTimeout, remember, busyStreak, showConnectionFallback, showTransientError, showVoiceFailure, startThinkingTimeout, syncUiLanguage, systemPrompt, takeVoiceToken]);
 
   startTalkTurnRef.current = startTalkTurn;
 

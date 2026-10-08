@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createDurableLogQueue } from '../kiosk/src/voice/durableLogQueue.ts';
 
-class Offline extends Error {}
+/** What sendDurableLog throws on a 4xx: the server refused this payload. */
+class Rejected extends Error {}
 
 function memoryStorage(capacity = Infinity) {
   const mem = new Map<string, string>();
@@ -20,8 +21,8 @@ function memoryStorage(capacity = Infinity) {
 
 function queue(send: (p: Record<string, unknown>) => Promise<void>, storage = memoryStorage()) {
   return createDurableLogQueue({
-    storage, key: 'q', maxItems: 100, maxAttempts: 3, send,
-    isOffline: (err) => err instanceof Offline,
+    storage, key: 'q', maxItems: 100, maxRejections: 3, send,
+    isRejected: (err) => err instanceof Rejected,
   });
 }
 
@@ -54,13 +55,13 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
   assert.equal(q.size(), 0);
 }
 
-// 3. Offline: the first failure stops the run, everything stays queued, no attempts burnt.
+// 3. Offline: the first failure stops the run, everything stays queued, nothing charged.
 {
   let calls = 0;
   let online = false;
-  const q = queue(async () => { calls += 1; if (!online) throw new Offline('Failed to fetch'); });
+  const q = queue(async () => { calls += 1; if (!online) throw new Error('Failed to fetch'); });
   for (const id of ['a', 'b', 'c']) q.enqueue(id, { turnId: id });
-  for (let i = 0; i < 5; i++) await q.flush(); // more offline runs than maxAttempts
+  for (let i = 0; i < 5; i++) await q.flush(); // more offline runs than maxRejections
   assert.equal(calls, 5, 'one probe per run while offline');
   assert.equal(q.size(), 3, 'offline never drops a turn');
   online = true;
@@ -69,11 +70,11 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 }
 
 // 4. A payload the server always rejects doesn't block later turns, and is dropped
-//    after maxAttempts instead of sitting at the head of the queue forever.
+//    after maxRejections instead of sitting at the head of the queue forever.
 {
   const sent: string[] = [];
   const q = queue(async (p) => {
-    if (p.turnId === 'poison') throw new Error('log HTTP 503');
+    if (p.turnId === 'poison') throw new Rejected('log HTTP 400');
     sent.push(String(p.turnId));
   });
   q.enqueue('poison', { turnId: 'poison' });
@@ -82,7 +83,7 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
   assert.deepEqual(sent, ['ok'], 'later turns go through past a rejected one');
   await q.flush();
   await q.flush();
-  assert.equal(q.size(), 0, 'rejected item dropped after maxAttempts');
+  assert.equal(q.size(), 0, 'rejected item dropped after maxRejections');
 }
 
 // 4b. Items left by older builds (attempts counted every offline failure) are never
@@ -93,8 +94,8 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
   let online = false;
   let reject = false;
   const q = queue(async () => {
-    if (!online) throw new Offline('Failed to fetch');
-    if (reject) throw new Error('log HTTP 400');
+    if (!online) throw new Error('Failed to fetch');
+    if (reject) throw new Rejected('log HTTP 400');
   }, storage);
   q.enqueue('new', { turnId: 'new' });
   await q.flush(); // offline run
@@ -108,9 +109,9 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
 {
   const drops: string[] = [];
   const q = createDurableLogQueue({
-    storage: memoryStorage(), key: 'q', maxItems: 2, maxAttempts: 1,
-    isOffline: () => false,
-    send: async () => { throw new Error('log HTTP 400'); },
+    storage: memoryStorage(), key: 'q', maxItems: 2, maxRejections: 1,
+    isRejected: () => true,
+    send: async () => { throw new Rejected('log HTTP 400'); },
     onDrop: (reason, count) => drops.push(`${reason}:${count}`),
   });
   for (const id of ['a', 'b', 'c']) q.enqueue(id, { turnId: id });

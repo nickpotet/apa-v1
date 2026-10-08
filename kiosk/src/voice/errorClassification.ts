@@ -13,17 +13,16 @@ const CONNECTIVITY_ERROR = /failed to fetch|networkerror|load failed|net::|err_|
 // answer while the kiosk cannot talk.
 const MODEL_BUSY_ERROR = /high demand|overloaded|"status"\s*:\s*"UNAVAILABLE"/i;
 
-function messageOf(error: unknown): string {
+export function messageOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error ?? '');
 }
 
-export function isModelBusyError(error: unknown): boolean {
-  return MODEL_BUSY_ERROR.test(messageOf(error));
-}
-
-export function isConnectivityError(error: unknown): boolean {
-  if (isModelBusyError(error)) return false;
-  return CONNECTIVITY_ERROR.test(messageOf(error));
+/** Busy wins over connectivity: Google's busy JSON also contains "503". */
+export function classifyVoiceFailure(error: unknown): 'busy' | 'connectivity' | 'other' {
+  const message = messageOf(error);
+  if (MODEL_BUSY_ERROR.test(message)) return 'busy';
+  if (CONNECTIVITY_ERROR.test(message)) return 'connectivity';
+  return 'other';
 }
 
 /** A busy error is worth a short "try again" once or twice. Several in a row mean

@@ -2,6 +2,7 @@ import type { Language } from './providers/VoiceProvider';
 import type { EntranceTheme, OpeningTheme } from './entranceCadence';
 import { APP_VERSION } from '../config/appVersion';
 import { createDurableLogQueue } from './durableLogQueue';
+import { messageOf } from './errorClassification';
 
 type EventSource = 'app' | 'provider' | 'playback' | 'input' | 'token';
 
@@ -48,6 +49,10 @@ type LogHealth = {
   directSendFailed: number;
   lastError?: string;
 };
+
+function emptyLogHealth(): LogHealth {
+  return { droppedRejected: 0, droppedOverflow: 0, directSendFailed: 0 };
+}
 
 type DiagnosticsStore = {
   appVersion: string;
@@ -127,11 +132,11 @@ const store: DiagnosticsStore = window.__apaDiagnostics ?? {
   recentTurns: [],
   archiveTurns: loadArchivedTurns(),
   recentEvents: [],
-  logHealth: { droppedRejected: 0, droppedOverflow: 0, directSendFailed: 0 },
+  logHealth: emptyLogHealth(),
 };
 
 store.appVersion = APP_VERSION;
-store.logHealth ??= { droppedRejected: 0, droppedOverflow: 0, directSendFailed: 0 };
+store.logHealth ??= emptyLogHealth();
 window.__apaDiagnostics = store;
 
 let turnCounter = 0;
@@ -200,7 +205,7 @@ async function sendDurableLog(payload: Record<string, unknown>): Promise<void> {
     const serverSide = response.status >= 500 || response.status === 408 || response.status === 429;
     throw serverSide ? new Error(message) : new LogRejectedError(message);
   } catch (err) {
-    store.logHealth.lastError = err instanceof Error ? err.message : String(err);
+    store.logHealth.lastError = messageOf(err);
     throw err;
   } finally {
     window.clearTimeout(timer);
@@ -212,9 +217,8 @@ const durableLogQueue = createDurableLogQueue({
   key: DURABLE_LOG_QUEUE_KEY,
   maxItems: MAX_DURABLE_LOG_QUEUE,
   send: sendDurableLog,
-  // Network errors, timeouts and server-side statuses all stop the run.
-  isOffline: (err) => !(err instanceof LogRejectedError),
-  maxAttempts: 50,
+  isRejected: (err) => err instanceof LogRejectedError,
+  maxRejections: 50,
   onDrop: (reason, count) => {
     if (reason === 'rejected') store.logHealth.droppedRejected += count;
     else store.logHealth.droppedOverflow += count;
@@ -266,9 +270,10 @@ function pushRecentEvent(event: DiagnosticEvent & { turnId?: string; at: string 
 
 window.setTimeout(() => { void durableLogQueue.flush(); }, 1000);
 window.addEventListener('online', () => { void durableLogQueue.flush(); });
-window.setInterval(() => {
-  if (durableLogQueue.size()) void durableLogQueue.flush();
-}, LOG_RETRY_INTERVAL_MS);
+window.setInterval(() => { void durableLogQueue.flush(); }, LOG_RETRY_INTERVAL_MS);
+window.addEventListener('storage', (event) => {
+  if (event.key === DURABLE_LOG_QUEUE_KEY) durableLogQueue.reload();
+});
 
 export function beginDiagnosticTurn(meta: {
   trigger: string;
